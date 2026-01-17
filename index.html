@@ -2,74 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mochkil Puffs: Corporate Sabotage</title>
-   <style>
-    :root { 
-        --neon-orange: #ff9900; 
-        --quantum-blue: #00f2ff; 
-    }
-    
-    * { 
-        box-sizing: border-box; 
-        touch-action: none; /* Prevents double-tap zoom and scrolling */
-    }
+    <style>
+        :root { --neon-orange: #ff9900; --quantum-blue: #00f2ff; }
+        
+        * { box-sizing: border-box; touch-action: none; }
 
-    body { 
-        margin: 0; 
-        padding: 0;
-        background-color: #000; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        /* Use svh to fit perfectly inside mobile browser chrome */
-        height: 100svh; 
-        width: 100vw;
-        overflow: hidden; 
-        position: fixed; /* Lock the body in place */
-        font-family: 'Courier New', monospace; 
-    }
+        body { 
+            margin: 0; padding: 0; 
+            background-color: #000; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100svh; width: 100vw; 
+            overflow: hidden; position: fixed;
+            font-family: 'Courier New', monospace; 
+        }
 
-    #game-container { 
-        position: relative; 
-        width: 100%; 
-        height: 100%; 
-        max-width: 430px; 
-        max-height: 932px; 
-        background: #111; 
-        overflow: hidden; 
-        display: flex;
-        flex-direction: column;
-    }
+        #game-container { 
+            position: relative; 
+            width: 100%; height: 100%; 
+            max-width: 430px; max-height: 932px; 
+            background: #111; overflow: hidden; 
+        }
 
-    canvas { 
-        display: block; 
-        width: 100%; 
-        height: 100%; 
-        touch-action: none;
-    }
+        canvas { display: block; width: 100%; height: 100%; z-index: 1; }
 
-    #ui { 
-        position: absolute; 
-        top: env(safe-area-inset-top, 20px); /* Adjusts for iPhone notch */
-        width: 100%; 
-        display: flex; 
-        justify-content: space-around; 
-        pointer-events: none; 
-        z-index: 200; 
-    }
+        /* LAYER 200: UI and Stats */
+        #ui { 
+            position: absolute; 
+            top: env(safe-area-inset-top, 40px); 
+            width: 100%; display: flex; justify-content: space-around; 
+            pointer-events: none; z-index: 200; 
+        }
+        .stat-box { 
+            background: rgba(0, 0, 0, 0.8); padding: 8px; 
+            border: 1px solid var(--neon-orange); color: #fff; 
+            text-align: center; min-width: 80px; font-size: 12px;
+        }
 
-    .stat-box { 
-        background: rgba(0, 0, 0, 0.8); 
-        padding: 8px; 
-        border: 1px solid var(--neon-orange); 
-        color: #fff; 
-        text-align: center; 
-        min-width: 70px; 
-        font-size: 12px;
-    }
-</style>
+        /* LAYER 10: The Badge (Moved to corner, fixed size) */
+        #badge-container { 
+            position: absolute; 
+            bottom: 20px; right: 20px; 
+            width: 60px; height: auto;
+            z-index: 10; opacity: 0.8; 
+            pointer-events: none;
+        }
+        #badge-container img { width: 100%; height: auto; }
 
+        /* LAYER 300+: Overlays and Videos */
+        .overlay { 
+            position: absolute; top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 400; background: rgba(0,0,0,0.9); 
+        }
+        
+        video { 
+            position: absolute; top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            object-fit: cover; z-index: 500; display: none; 
+        }
+
+        button { 
+            padding: 15px 30px; font-size: 18px; 
+            background: var(--neon-orange); color: #000; 
+            border: none; font-weight: bold; cursor: pointer; 
+            pointer-events: auto;
+        }
+
+        #skipVideo { 
+            z-index: 600; position: absolute; bottom: 50px; 
+            left: 50%; transform: translateX(-50%); 
+        }
+    </style>  
 </head>
 <body>
     <div id="game-container">
@@ -80,27 +86,36 @@
                 SOUND: <span id="soundStatus">OFF</span>
             </div>
         </div>
-        <div id="badge-container"><img src="credibility_badge.png" style="width:100%;"></div>
+
+        <div id="badge-container">
+            <img src="credibility_badge.png" alt="Badge">
+        </div>
+
         <canvas id="gameCanvas"></canvas>
+
         <div id="startScreen" class="overlay">
             <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
             <div style="display:flex; flex-direction:column; gap: 15px;">
                 <button onclick="initGame('MOCHKIL')">PLAY MOCHKIL</button>
-                <button onclick="initGame('AZUL')" style="background:var(--quantum-blue); box-shadow: 0 0 20px var(--quantum-blue);">PLAY AZUL</button>
+                <button onclick="initGame('AZUL')" style="background:var(--quantum-blue);">PLAY AZUL</button>
             </div>
         </div>
+
         <div id="creditsScreen" class="overlay" style="display:none;">
             <h2 id="winMessage" style="color:var(--neon-orange);">MISSION ACCOMPLISHED</h2>
-            <p style="color:white; text-align:center;">DIRECTOR: MaximumReality.xyz<br>CO-STARS: Azul & Mochkil</p>
             <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
+
         <video id="endVideo" playsinline webkit-playsinline></video>
-        <button id="skipVideo" style="display:none; position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:200; font-size:14px; padding:10px 20px;">SKIP TO CREDITS</button>
+        <button id="skipVideo" style="display:none;">SKIP VIDEO</button>
     </div>
 
     <script src="game.js"></script>
     <script>
         let isEnding = false;
+
+        // Prevent browser bounce/scroll
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
         function initGame(choice) {
             document.getElementById('startScreen').style.display = 'none';
@@ -111,90 +126,47 @@
         }
 
         function endGame(videoFile, msg) {
-    if (isEnding) return;
-    isEnding = true;
-    
-    // 1. COMPLETELY WIPE THE MUSIC
-    if (typeof bgMusic !== 'undefined') {
-        bgMusic.pause();
-        bgMusic.src = ""; // Clear the source
-        bgMusic.load();   // Force the browser to drop the audio lock
-    }
-    
-    document.getElementById('winMessage').innerText = msg;
-    const video = document.getElementById('endVideo');
-    const credits = document.getElementById('creditsScreen');
-    const skipBtn = document.getElementById('skipVideo');
-    const canvas = document.getElementById('gameCanvas');
-
-    // 2. KILL THE CANVAS
-    canvas.style.display = 'none';
-
-    // 3. HARD REFRESH THE VIDEO ELEMENT
-    video.pause();
-    video.removeAttribute('src'); // Clean start
-    video.load();
-    
-    video.src = videoFile;
-    video.style.display = 'block';
-    video.muted = true; // Start muted (Mobile requirement)
-    video.setAttribute('playsinline', 'true');
-    video.setAttribute('webkit-playsinline', 'true');
-    
-    video.load();
-    
-    // 4. THE PLAYBACK TRIGGER
-    // We use a slight delay to let the UI finish hiding the canvas
-    setTimeout(() => {
-        video.play().then(() => {
-            skipBtn.style.display = 'block';
+            if (isEnding) return;
+            isEnding = true;
             
-            // 5. UNMUTE HANDSHAKE
+            if (typeof bgMusic !== 'undefined') {
+                bgMusic.pause();
+                bgMusic.src = "";
+                bgMusic.load();
+            }
+            
+            document.getElementById('winMessage').innerText = msg;
+            const video = document.getElementById('endVideo');
+            const credits = document.getElementById('creditsScreen');
+            const skipBtn = document.getElementById('skipVideo');
+            const canvas = document.getElementById('gameCanvas');
+
+            canvas.style.display = 'none';
+            video.src = videoFile;
+            video.style.display = 'block';
+            video.muted = true;
+            
+            video.load();
             setTimeout(() => {
-                if (!isMuted) {
-                    video.muted = false;
-                    video.volume = 1.0;
-                }
-            }, 1000); 
-        }).catch((err) => {
-            console.error("Video Playback Error:", err);
-            // If it fails, just show the credits so the player isn't stuck on black
-            transitionToCredits();
-        });
-    }, 100);
+                video.play().then(() => {
+                    skipBtn.style.display = 'block';
+                    setTimeout(() => {
+                        if (!isMuted) { video.muted = false; video.volume = 1.0; }
+                    }, 1000);
+                }).catch(() => transitionToCredits());
+            }, 100);
 
-    const transitionToCredits = () => {
-        video.pause();
-        video.src = "";
-        video.style.display = 'none';
-        skipBtn.style.display = 'none';
-        credits.style.display = 'flex';
-        
-        if (!isMuted) {
-            bgMusic.src = "cereal_wars.mp3";
-            bgMusic.load();
-            bgMusic.play().catch(() => {});
+            const transitionToCredits = () => {
+                video.pause();
+                video.src = "";
+                video.style.display = 'none';
+                skipBtn.style.display = 'none';
+                credits.style.display = 'flex';
+            };
+
+            video.onended = transitionToCredits;
+            skipBtn.onclick = transitionToCredits;
         }
-    };
-
-    video.onended = transitionToCredits;
-    skipBtn.onclick = transitionToCredits;
-}
-
-// Prevent the whole page from scrolling/bouncing on touch
-document.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-}, { passive: false });
-
-// Force the canvas to resize to the actual container size
-function resize() {
-    const container = document.getElementById('game-container');
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
     </script>
 </body>
 </html>
