@@ -19,49 +19,46 @@
         @keyframes shake { 0% { transform: translate(2px, 2px); } 25% { transform: translate(-2px, -2px); } 100% { transform: translate(0, 0); } }
     </style>
 </head>
-<body>
+<<body>
     <div id="game-container">
         <div id="ui">
             <div class="stat-box">MARKET<br><span id="score">50</span>%</div>
             <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div> 
             <div class="stat-box" id="muteToggle" style="pointer-events: auto; cursor: pointer;">
-    SOUND: <span id="soundStatus">OFF</span>
-</div>
-
+                SOUND: <span id="soundStatus">OFF</span>
+            </div>
         </div>
         <div id="badge-container"><img src="credibility_badge.png" style="width:100%;"></div>
         <canvas id="gameCanvas"></canvas>
+
         <div id="startScreen" class="overlay">
             <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
-            <button onclick="initGame()">START WAR</button>
+            <div style="display:flex; flex-direction:column; gap: 15px;">
+                <button onclick="initGame('MOCHKIL')" style="background:var(--neon-orange);">PLAY MOCHKIL</button>
+                <button onclick="initGame('AZUL')" style="background:var(--quantum-blue); box-shadow: 0 0 20px var(--quantum-blue);">PLAY AZUL</button>
+            </div>
         </div>
+
         <div id="creditsScreen" class="overlay" style="display:none;">
-            <h2 style="color:var(--neon-orange);">MISSION ACCOMPLISHED</h2>
+            <h2 id="winMessage" style="color:var(--neon-orange);">MISSION ACCOMPLISHED</h2>
             <p style="color:white; text-align:center;">DIRECTOR: MaximumReality.xyz<br>CO-STARS: Azul & Mochkil</p>
             <a href="https://YouTube.com/@maximumrealitylori" target="_blank" style="color:var(--quantum-blue); margin:20px;">WATCH SNACK ATTACK</a>
             <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
         <video id="endVideo" playsinline muted></video>
     </div>
-        <script src="game.js"></script>
-    <script>
-        function initGame() {
-            document.getElementById('startScreen').style.display = 'none';
-            
-            // Unlock Audio Context for iOS
-            if (typeof bgMusic !== 'undefined') {
-                // This "primes" the iPhone speakers so sound works later
-                bgMusic.play().then(() => {
-                    if (isMuted) bgMusic.pause();
-                }).catch(e => console.log("Audio waiting for toggle"));
-            }
 
-            if (typeof startGame === "function") {
-                startGame(); // Starts the logic in your game.js
+    <script src="game.js"></script>
+    <script>
+        function initGame(choice) {
+            document.getElementById('startScreen').style.display = 'none';
+            if (typeof bgMusic !== 'undefined') {
+                bgMusic.play().then(() => { if (isMuted) bgMusic.pause(); }).catch(e => {});
             }
+            // Pass 'MOCHKIL' or 'AZUL' to the game engine
+            if (typeof startGame === "function") startGame(choice);
         }
 
-        // Hook for the "Mental" shake effect
         function triggerShake(duration) {
             const container = document.getElementById('game-container');
             container.classList.add('shake');
