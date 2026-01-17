@@ -74,35 +74,75 @@
         }
 
         function endGame(videoFile, msg) {
-            if (isEnding) return;
-            isEnding = true;
-            if (typeof bgMusic !== 'undefined') {
-                bgMusic.pause(); bgMusic.muted = true; bgMusic.src = ""; bgMusic.load();
-            }
-            document.getElementById('winMessage').innerText = msg;
-            const video = document.getElementById('endVideo');
-            const skipBtn = document.getElementById('skipVideo');
-            const canvas = document.getElementById('gameCanvas');
-            canvas.style.display = 'none';
-            video.src = videoFile;
-            video.style.display = 'block';
-            video.muted = true;
-            video.load();
+    if (isEnding) return;
+    isEnding = true;
+    
+    // 1. SILENCE EVERYTHING IMMEDIATELY
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.pause();
+        bgMusic.muted = true;
+        bgMusic.src = ""; 
+    }
+    
+    // 2. BLACKOUT: Hide everything to save CPU/Memory for the video
+    const canvas = document.getElementById('gameCanvas');
+    const container = document.getElementById('game-container');
+    const video = document.getElementById('endVideo');
+    const skipBtn = document.getElementById('skipVideo');
+    
+    canvas.style.display = 'none';
+    // Temporarily hide the background image to ensure the video has full priority
+    container.style.backgroundImage = 'none';
+    container.style.backgroundColor = 'black';
+
+    document.getElementById('winMessage').innerText = msg;
+
+    // 3. PRE-LOAD VIDEO WHILE MUTED
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; 
+    video.load();
+    
+    // 4. THE DELAYED HANDSHAKE
+    // Wait 500ms (half a second) of total blackness to let the OS breathe
+    setTimeout(() => {
+        video.play().then(() => {
+            skipBtn.style.display = 'block';
+            
+            // 5. UNMUTE LATER
+            // Wait until 1.5 seconds in to ensure the video buffer is full
             setTimeout(() => {
-                video.play().then(() => {
-                    skipBtn.style.display = 'block';
-                    setTimeout(() => { if (!isMuted) { video.muted = false; video.volume = 1.0; } }, 1200);
-                }).catch(() => transitionToCredits());
-            }, 300);
-            const transitionToCredits = () => {
-                video.pause(); video.src = ""; video.style.display = 'none';
-                skipBtn.style.display = 'none';
-                document.getElementById('creditsScreen').style.display = 'flex';
-                if (!isMuted) { bgMusic.src = "cereal_wars.mp3"; bgMusic.load(); bgMusic.play().catch(() => {}); }
-            };
-            video.onended = transitionToCredits;
-            skipBtn.onclick = transitionToCredits;
+                if (!isMuted) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                    // Force a second play call—this is the secret "wake up" for iOS
+                    video.play().catch(() => {});
+                }
+            }, 1500); 
+        }).catch(() => transitionToCredits());
+    }, 500);
+
+    const transitionToCredits = () => {
+        video.pause();
+        video.src = "";
+        video.style.display = 'none';
+        skipBtn.style.display = 'none';
+        
+        // Restore the background for the credits screen
+        container.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('aisle.jpg')";
+        document.getElementById('creditsScreen').style.display = 'flex';
+        
+        if (!isMuted) {
+            bgMusic.src = "cereal_wars.mp3";
+            bgMusic.load();
+            bgMusic.play().catch(() => {});
         }
+    };
+
+    video.onended = transitionToCredits;
+    skipBtn.onclick = transitionToCredits;
+}
+
     </script>
 </body>
 </html>
