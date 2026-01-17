@@ -16,7 +16,7 @@ let startTime = 0;
 let bgMusic = new Audio('cereal_wars.mp3'); 
 bgMusic.loop = true;
 
-// SOUND TOGGLE
+// SOUND TOGGLE - Updated for better iPhone 14 stability
 document.getElementById('muteToggle').addEventListener('click', (e) => {
     e.stopPropagation(); 
     isMuted = !isMuted;
@@ -24,11 +24,16 @@ document.getElementById('muteToggle').addEventListener('click', (e) => {
     
     if (gameState === 'playing') {
         bgMusic.muted = isMuted;
-        if (!isMuted) bgMusic.play().catch(() => {});
-        else bgMusic.pause();
+        if (!isMuted) {
+            bgMusic.play().catch(() => {});
+        } else {
+            bgMusic.pause();
+        }
     } else if (gameState === 'over') {
         const video = document.getElementById('endVideo');
-        if (video) video.muted = isMuted;
+        if (video) {
+            video.muted = isMuted;
+        }
     }
 });
 
@@ -147,12 +152,13 @@ function update() {
         if (typeof endGame === "function") endGame('puffs_commercial.MP4', "MOCHKIL WINS");
     } else if (marketShare <= 0.5) {
         gameState = 'over';
-        if (typeof endGame === "function") endGame('8bit_azulo.mp4', "AZUL WINS");
+        // Updated to the large MP4 for better iPhone hardware decoding
+        if (typeof endGame === "function") endGame('8bit_azulo.MP4', "AZUL WINS");
     }
 }
 
 function draw() {
-    if (gameState !== 'playing') return; // Stop drawing when game ends
+    if (gameState !== 'playing') return; 
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let speedMult = (1 + ((performance.now() - startTime) / 60000)).toFixed(2);
