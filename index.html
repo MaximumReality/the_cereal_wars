@@ -14,7 +14,7 @@
         #badge-container { position: absolute; bottom: 20px; right: 20px; width: 80px; z-index: 10; opacity: 0.9; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; background: rgba(0,0,0,0.85); }
         button { padding: 20px 40px; font-size: 20px; background: var(--neon-orange); color: #000; border: none; font-weight: bold; box-shadow: 0 0 20px var(--neon-orange); cursor: pointer; pointer-events: auto; }
-        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 150; display: none; }
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 150; display: none; background: black; }
         #skipVideo { background: rgba(0, 0, 0, 0.7); color: var(--quantum-blue); border: 1px solid var(--quantum-blue); border-radius: 4px; padding: 8px 16px; font-family: 'Courier New', monospace; font-weight: bold; text-transform: uppercase; box-shadow: 0 0 10px var(--quantum-blue); }
     </style>  
 </head>
@@ -41,8 +41,7 @@
             <p style="color:white; text-align:center;">DIRECTOR: MaximumReality.xyz<br>CO-STARS: Azul & Mochkil</p>
             <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
-        <video id="endVideo" playsinline webkit-playsinline preload="auto"></video>
-
+        <video id="endVideo" playsinline webkit-playsinline></video>
         <button id="skipVideo" style="display:none; position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:200; font-size:14px; padding:10px 20px;">SKIP TO CREDITS</button>
     </div>
 
@@ -58,70 +57,59 @@
             if (typeof startGame === "function") startGame(choice);
         }
 
-       function endGame(videoFile, msg) {
-    if (isEnding) return;
-    isEnding = true;
-    
-    // 1. COMPLETELY DISCONNECT THE MUSIC
-    if (typeof bgMusic !== 'undefined') {
-        bgMusic.pause();
-        bgMusic.src = ""; // This tells Safari "I am done with this audio file"
-        bgMusic.load();   // Flushes the audio buffer
-    }
-    
-    document.getElementById('winMessage').innerText = msg;
-    const video = document.getElementById('endVideo');
-    const credits = document.getElementById('creditsScreen');
-    const skipBtn = document.getElementById('skipVideo');
-    const canvas = document.getElementById('gameCanvas');
-
-    // 2. Hide the game to save CPU power
-    canvas.style.display = 'none';
-
-    video.src = videoFile;
-    video.style.display = 'block';
-    
-    // 3. The "Safari Handshake"
-    video.muted = true; // Start muted to ensure the video actually loads
-    video.setAttribute('playsinline', 'true');
-    video.load();
-    
-    video.play().then(() => {
-        skipBtn.style.display = 'block';
-        
-        // 4. Wait for the video to be "Stable" before unmuting
-        setTimeout(() => {
-            // Only unmute if the user didn't have global mute on
-            if (!isMuted) {
-                video.muted = false;
-                video.volume = 1.0;
+        function endGame(videoFile, msg) {
+            if (isEnding) return;
+            isEnding = true;
+            
+            // 1. HARD RESET AUDIO: Kill the music connection
+            if (typeof bgMusic !== 'undefined') {
+                bgMusic.pause();
+                bgMusic.src = ""; 
+                bgMusic.load(); 
             }
-        }, 600); 
-    }).catch((error) => {
-        console.log("Video blocked:", error);
-        transitionToCredits();
-    });
+            
+            document.getElementById('winMessage').innerText = msg;
+            const video = document.getElementById('endVideo');
+            const credits = document.getElementById('creditsScreen');
+            const skipBtn = document.getElementById('skipVideo');
+            const canvas = document.getElementById('gameCanvas');
 
-    const transitionToCredits = () => {
-        video.pause();
-        video.src = "";
-        video.style.display = 'none';
-        skipBtn.style.display = 'none';
-        credits.style.display = 'flex';
-        
-        // 5. Bring the music back ONLY for the credits
-        if (!isMuted) {
-            bgMusic.src = "cereal_wars.mp3"; // Re-link the file
-            bgMusic.load();
-            bgMusic.play().catch(() => {});
+            // 2. Hide Canvas to save GPU resources
+            canvas.style.display = 'none';
+
+            video.src = videoFile;
+            video.style.display = 'block';
+            video.muted = true; // Still required to start playback on iOS
+            video.load();
+            
+            video.play().then(() => {
+                skipBtn.style.display = 'block';
+                // 3. The "Unmute Delay" - wait for video to be stable
+                setTimeout(() => {
+                    if (!isMuted) {
+                        video.muted = false;
+                        video.volume = 1.0;
+                    }
+                }, 800);
+            }).catch(() => transitionToCredits());
+
+            const transitionToCredits = () => {
+                video.pause();
+                video.src = "";
+                video.style.display = 'none';
+                skipBtn.style.display = 'none';
+                credits.style.display = 'flex';
+                // Restart music for credits if needed
+                if (!isMuted) {
+                    bgMusic.src = "cereal_wars.mp3";
+                    bgMusic.load();
+                    bgMusic.play().catch(() => {});
+                }
+            };
+
+            video.onended = transitionToCredits;
+            skipBtn.onclick = transitionToCredits;
         }
-    };
-
-    video.onended = transitionToCredits;
-    skipBtn.onclick = transitionToCredits;
-}
-
-
     </script>
 </body>
 </html>
