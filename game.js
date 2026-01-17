@@ -12,23 +12,27 @@ let thrownBoxes = [];
 let isMuted = true;
 let lastThrowTime = 0;
 
-// --- Audio Fix ---
+// --- Audio Logic ---
 let bgMusic = new Audio('cereal_wars.mp3'); 
 bgMusic.loop = true;
 
-const muteBtn = document.getElementById('muteToggle');
-if (muteBtn) {
-    muteBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); 
+// Fix for the Sound Button not responding
+const muteToggle = document.getElementById('muteToggle');
+if (muteToggle) {
+    muteToggle.onclick = (e) => {
+        e.preventDefault();
         isMuted = !isMuted;
-        const status = document.getElementById('soundStatus');
-        if (status) status.innerText = isMuted ? "OFF" : "ON";
+        document.getElementById('soundStatus').innerText = isMuted ? "OFF" : "ON";
         bgMusic.muted = isMuted;
-        if (!isMuted) bgMusic.play().catch(err => console.log("Audio blocked"));
-    });
+        if (!isMuted) {
+            bgMusic.play().catch(() => console.log("User must interact first"));
+        } else {
+            bgMusic.pause();
+        }
+    };
 }
 
-// --- Asset Registry with Error Protection ---
+// --- Asset Registry ---
 const assets = {
     mochkilPlayer: new Image(), 
     mochkilNPC: new Image(),
@@ -40,7 +44,7 @@ const assets = {
     chefHat: new Image()
 };
 
-// Map sources - Double check these filenames on your phone!
+// Character Assets
 assets.mochkilPlayer.src = 'thief_no_cereal.png';
 assets.mochkilNPC.src = 'mochkil_puffs.PNG'; 
 assets.flyAzulo.src = 'flyazulo.png';
@@ -53,19 +57,26 @@ assets.chefHat.src = 'chef-hat.png';
 const player = { x: 175, y: 750, width: 80, height: 100, state: 'FLYING' };
 const enemy = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 };
 
-// --- Core Logic ---
 function startGame(choice) {
     playerChar = choice;
     gameState = 'playing';
-    marketShare = 50; mentalLevel = 0;
-    boxes = []; thrownBoxes = [];
+    marketShare = 50; 
+    mentalLevel = 0;
+    boxes = []; 
+    thrownBoxes = [];
 
     if (playerChar === 'AZUL') {
-        player.y = 100; enemy.y = 750;
+        player.y = 100;
+        enemy.y = 750;
     } else {
-        player.y = 750; enemy.y = 100;
+        player.y = 750;
+        enemy.y = 100;
     }
-    requestAnimationFrame(gameLoop);
+    
+    // Ensure the theme music loops properly when started
+    if (!isMuted) bgMusic.play().catch(() => {});
+    
+    gameLoop(); 
 }
 
 function update() {
@@ -74,6 +85,7 @@ function update() {
     enemy.x += 3 * enemy.dir;
     if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
 
+    // NPC Throwing Logic
     if (playerChar === 'AZUL' && Math.random() > 0.97) {
         thrownBoxes.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 10, active: true });
     }
@@ -116,45 +128,53 @@ function update() {
     marketShare = Math.max(0, Math.min(100, marketShare));
     if (marketShare >= 100 || mentalLevel >= 200) {
         gameState = 'over';
-        if (typeof endGame === "function") endGame('puffs_commercial.MP4', "MOCHKIL WINS");
+        endGame('puffs_commercial.MP4', "MOCHKIL WINS");
     } else if (marketShare <= 0) {
         gameState = 'over';
-        if (typeof endGame === "function") endGame('8bit_azulo.MP4', "AZUL WINS");
+        endGame('8bit_azulo.MP4', "AZUL WINS");
     }
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Fill background so we know canvas is working
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Character Rendering
+    // Draw Characters
     let azulObj = (playerChar === 'AZUL') ? player : enemy;
     let azulSprite = azulObj.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
-    try { ctx.drawImage(azulSprite, azulObj.x, azulObj.y, azulObj.width, azulObj.height); } catch(e){}
+    ctx.drawImage(azulSprite, azulObj.x, azulObj.y, azulObj.width, azulObj.height);
 
     let mochObj = (playerChar === 'MOCHKIL') ? player : enemy;
     let mochSprite = (playerChar === 'AZUL') ? assets.mochkilNPC : assets.mochkilPlayer;
-    try { ctx.drawImage(mochSprite, mochObj.x, mochObj.y, mochObj.width, mochObj.height); } catch(e){}
+    ctx.drawImage(mochSprite, mochObj.x, mochObj.y, mochObj.width, mochObj.height);
     
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
-    try { ctx.drawImage(hat, mochObj.x + 10, mochObj.y - 30, 60, 50); } catch(e){}
+    ctx.drawImage(hat, mochObj.x + 10, mochObj.y - 30, 60, 50);
 
-    // Item Rendering
+    // Draw Items
     thrownBoxes.forEach(box => {
-        try { ctx.drawImage(assets.mochkilNPC, box.x, box.y, box.width, box.height); } catch(e){}
+        ctx.drawImage(assets.mochkilNPC, box.x, box.y, box.width, box.height);
     });
     boxes.forEach(b => {
         let img = b.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
-        try { ctx.drawImage(img, b.x, b.y, b.width, b.height); } catch(e){}
+        ctx.drawImage(img, b.x, b.y, b.width, b.height);
     });
 
-    // UI Updates
-    const sDisp = document.getElementById('score');
-    const rDisp = document.getElementById('rage');
-    if (sDisp) sDisp.innerText = Math.floor(marketShare);
-    if (rDisp) rDisp.innerText = Math.floor(mentalLevel);
+    // Update UI Stats
+    document.getElementById('score').innerText = Math.floor(marketShare);
+    document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
 
-// --- Input & Loops ---
+function gameLoop() { 
+    if (gameState === 'playing') { 
+        update(); 
+        draw(); 
+        requestAnimationFrame(gameLoop); 
+    } 
+}
+
+// Controls
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     let touch = e.touches[0];
@@ -171,10 +191,6 @@ canvas.addEventListener('touchstart', (e) => {
         }
     }
 }, { passive: false });
-
-function gameLoop() { 
-    if (gameState === 'playing') { update(); draw(); requestAnimationFrame(gameLoop); } 
-}
 
 setInterval(() => {
     if (gameState === 'playing') {
