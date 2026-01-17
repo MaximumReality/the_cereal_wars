@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Mochkil Puffs: Sabotage</title>
+
+<!-- Manifest & PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="azulos_corrupted.png">
+<meta name="apple-mobile-web-app-title" content="Cereal Wars">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ff9900">
+
+<!-- Styles -->
+<style>
+:root { --neon-orange:#ff9900; --quantum-blue:#00f2ff; }
+* { box-sizing:border-box; touch-action:none; -webkit-tap-highlight-color:transparent; }
+html, body { margin:0; padding:0; width:100vw; height:100%; overflow:hidden; position:fixed; font-family:'Courier New', monospace; }
+#game-container { position:relative; width:100%; height:100%; max-width:430px; margin:0 auto; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('aisle.jpg'); background-size:cover; background-position:center; }
+canvas { display:block; width:100%; height:100%; z-index:1; background:transparent; }
+#ui { position:absolute; top:max(25px, env(safe-area-inset-top)); width:100%; display:flex; justify-content:space-around; pointer-events:none; z-index:200; }
+.stat-box { background:rgba(0,0,0,0.8); padding:8px; border:1px solid var(--neon-orange); color:#fff; text-align:center; min-width:85px; font-size:11px; pointer-events:auto; }
+#badge-container { position:absolute; bottom:40px; right:20px; width:60px; z-index:10; }
+.overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:400; background:rgba(0,0,0,0.9); }
+video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:500; display:none; background:#000; }
+button { padding:18px 35px; font-size:18px; background:var(--neon-orange); color:#000; border:none; font-weight:bold; cursor:pointer; pointer-events:auto; border-radius:4px; }
+#skipVideo { z-index:600; position:absolute; bottom:60px; left:50%; transform:translateX(-50%); }
+</style>
+</head>
+<body>
+<div id="game-container">
+
+    <!-- UI Stats -->
+    <div id="ui">
+        <div class="stat-box">MARKET<br><span id="score">50</span>%</div>
+        <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div> 
+        <div class="stat-box" id="muteToggle">SOUND: <span id="soundStatus">OFF</span></div>
+    </div>
+
+    <!-- Badge -->
+    <div id="badge-container"><img src="credibility_badge.png" style="width:100%" alt="Badge"></div>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Start Screen -->
+    <div id="startScreen" class="overlay">
+        <img src="azulos_corrupted.png" style="width:100px; margin-bottom:15px; border-radius:15px;">
+        <h1 style="color:var(--neon-orange); text-align:center; margin-bottom:10px;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
+        <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin-bottom:20px; font-size:13px; color:white; border:1px solid var(--neon-orange); width:80%; text-align:center;">
+            <p style="margin:0 0 10px 0;"><strong style="color:var(--neon-orange)">MOCHKIL:</strong> TAP to shoot boxes of Puff at Azul, Catch Azulo's boxes to re-label as Mochkil Puffs!</p>
+            <p style="margin:0;"><strong style="color:var(--quantum-blue)">AZUL:</strong> Slide to boxes with orange stickers to remove the stickers, avoid flying Mochkil Puff boxes!</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <button id="playMochkil">PLAY MOCHKIL</button>
+            <button id="playAzul" style="background:var(--quantum-blue);">PLAY AZUL</button>
+        </div>
+        <p style="color:gray; font-size:10px; margin-top:15px;">v2.2</p>
+    </div>
+
+    <!-- Credits -->
+    <div id="creditsScreen" class="overlay" style="display:none;">
+        <h2 id="winMessage" style="color:var(--neon-orange);">MISSION ACCOMPLISHED</h2>
+        <button onclick="window.location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <!-- End Video -->
+    <video id="endVideo" playsinline webkit-playsinline></video>
+    <button id="skipVideo" style="display:none;">SKIP VIDEO</button>
+</div>
+
+<!-- Game Script -->
+<script src="game.js"></script>
+
+<script>
+// Basic Controls & Audio
+let isEnding = false;
+document.getElementById('playMochkil').addEventListener('click', ()=>handleStart('MOCHKIL'));
+document.getElementById('playAzul').addEventListener('click', ()=>handleStart('AZUL'));
+
+function handleStart(choice) {
+    document.getElementById('startScreen').style.display='none';
+    if(typeof bgMusic!=='undefined'){ bgMusic.muted=isMuted; if(!isMuted) bgMusic.play().catch(()=>{}); }
+    if(typeof startGame==="function") startGame(choice);
+    if(window.navigator.vibrate) window.navigator.vibrate(20);
+}
+
+function endGame(videoFile,msg){
+    if(isEnding) return; isEnding=true;
+    if(typeof gameState!=='undefined') gameState='over';
+    if(typeof bgMusic!=='undefined'){ bgMusic.pause(); bgMusic.src=""; }
+
+    const video=document.getElementById('endVideo'), skipBtn=document.getElementById('skipVideo'), canvas=document.getElementById('gameCanvas'), container=document.getElementById('game-container');
+
+    container.style.backgroundImage='none'; container.style.backgroundColor='#000';
+    canvas.style.display='none'; document.getElementById('ui').style.display='none'; document.getElementById('badge-container').style.display='none';
+    document.getElementById('winMessage').innerText=msg;
+
+    video.src=videoFile; video.style.display='block'; video.muted=true; video.load();
+
+    setTimeout(()=>{
+        video.play().then(()=>{ skipBtn.style.display='block'; setTimeout(()=>{ if(!isMuted && !video.paused) video.muted=false; },1500); }).catch(()=>transitionToCredits());
+    },800);
+
+    const transitionToCredits=()=>{
+        video.pause(); video.src=""; video.style.display='none'; skipBtn.style.display='none';
+        container.style.backgroundImage="linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('aisle.jpg')";
+        document.getElementById('ui').style.display='flex'; document.getElementById('creditsScreen').style.display='flex';
+        if(!isMuted){ bgMusic.src="cereal_wars.mp3"; bgMusic.load(); bgMusic.play().catch(()=>{}); }
+    };
+    video.onended=transitionToCredits; skipBtn.onclick=transitionToCredits;
+}
+
+// Service Worker
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(err=>console.log(err)); }); }
+</script>
+</body>
+</html>
