@@ -58,44 +58,47 @@
             if (typeof startGame === "function") startGame(choice);
         }
 
-        function endGame(videoFile, msg) {
+       function endGame(videoFile, msg) {
     if (isEnding) return;
     isEnding = true;
     
-    // 1. Stop everything else
-    if (typeof bgMusic !== 'undefined') bgMusic.pause();
+    // 1. COMPLETELY DISCONNECT THE MUSIC
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.pause();
+        bgMusic.src = ""; // This tells Safari "I am done with this audio file"
+        bgMusic.load();   // Flushes the audio buffer
+    }
     
     document.getElementById('winMessage').innerText = msg;
     const video = document.getElementById('endVideo');
     const credits = document.getElementById('creditsScreen');
     const skipBtn = document.getElementById('skipVideo');
-    
-    // 2. Clear canvas to free up GPU memory for the video
     const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.display = 'none'; // Hide canvas so video is the only focus
+
+    // 2. Hide the game to save CPU power
+    canvas.style.display = 'none';
 
     video.src = videoFile;
     video.style.display = 'block';
-    video.muted = true; // Stay muted for the start
-    video.setAttribute('autoplay', ''); 
-    video.setAttribute('playsinline', '');
     
+    // 3. The "Safari Handshake"
+    video.muted = true; // Start muted to ensure the video actually loads
+    video.setAttribute('playsinline', 'true');
     video.load();
     
-    // 3. Force Start
     video.play().then(() => {
         skipBtn.style.display = 'block';
-        // Wait longer for the 8-bit video to stabilize
+        
+        // 4. Wait for the video to be "Stable" before unmuting
         setTimeout(() => {
+            // Only unmute if the user didn't have global mute on
             if (!isMuted) {
                 video.muted = false;
                 video.volume = 1.0;
             }
-        }, 800); 
-    }).catch((e) => {
-        console.log("Safari blocked playback", e);
+        }, 600); 
+    }).catch((error) => {
+        console.log("Video blocked:", error);
         transitionToCredits();
     });
 
@@ -105,12 +108,19 @@
         video.style.display = 'none';
         skipBtn.style.display = 'none';
         credits.style.display = 'flex';
-        canvas.style.display = 'block'; // Bring canvas back for restart if needed
+        
+        // 5. Bring the music back ONLY for the credits
+        if (!isMuted) {
+            bgMusic.src = "cereal_wars.mp3"; // Re-link the file
+            bgMusic.load();
+            bgMusic.play().catch(() => {});
+        }
     };
 
     video.onended = transitionToCredits;
     skipBtn.onclick = transitionToCredits;
 }
+
 
     </script>
 </body>
