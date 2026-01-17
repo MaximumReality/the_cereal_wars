@@ -68,11 +68,19 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="startScreen" class="overlay">
-            <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
-            <div style="display:flex; flex-direction:column; gap: 20px;">
-                <button onclick="initGame('MOCHKIL')">PLAY MOCHKIL</button>
-                <button onclick="initGame('AZUL')" style="background:var(--quantum-blue);">PLAY AZUL</button>
-            </div>
+    <img src="azulos_corrupted.png" style="width: 100px; margin-bottom: 20px;">
+    <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
+    
+    <div style="display:flex; flex-direction:column; gap: 20px;">
+        <button onclick="initGame('MOCHKIL')">PLAY MOCHKIL</button>
+        <button onclick="initGame('AZUL')" style="background:var(--quantum-blue);">PLAY AZUL</button>
+    </div>
+
+    <button onclick="toggleFullScreen()" style="background:none; color:white; border:1px solid white; font-size:12px; margin-top:30px; padding:10px;">ENTER FULLSCREEN</button>
+    
+    <p style="color:gray; font-size:10px; margin-top:10px;">TIP: Add to Home Screen for the best experience!</p>
+</div>
+
             <p style="color:white; font-size:10px; margin-top:20px;">ADD TO HOME SCREEN FOR FULL EXPERIENCE</p>
         </div>
 
