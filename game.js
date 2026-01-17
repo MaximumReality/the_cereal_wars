@@ -1,10 +1,9 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-canvas.width = 430;
-canvas.height = 932;
+canvas.width = 430; canvas.height = 932;
 
 let gameState = 'waiting';
+let playerChar = 'MOCHKIL'; 
 let marketShare = 50; 
 let mentalLevel = 0;
 let boxes = [];
@@ -24,131 +23,141 @@ document.getElementById('muteToggle').addEventListener('click', (e) => {
 });
 
 const assets = {
-    mochkil: new Image(),
-    beanie: new Image(),
-    chefHat: new Image(),
-    badge: new Image(),
-    flyAzulo: new Image(),
-    holdingAzulo: new Image(),
-    boxNormal: new Image(),     
-    boxCorrupted: new Image(),  
-    puffsCereal: new Image()    
+    mochkil: new Image(), beanie: new Image(), chefHat: new Image(),
+    flyAzulo: new Image(), holdingAzulo: new Image(),
+    boxNormal: new Image(), boxCorrupted: new Image(), puffsCereal: new Image()
 };
 
 assets.mochkil.src = 'thief_no_cereal.png';
 assets.beanie.src = 'beanie.png';
 assets.chefHat.src = 'chef-hat.png';
-assets.badge.src = 'credibility_badge.png';
 assets.flyAzulo.src = 'flyazulo.png';
 assets.holdingAzulo.src = 'holding_azulos.png';
 assets.boxNormal.src = 'azulos_special.png';
 assets.boxCorrupted.src = 'azulos_corrupted.png';
 assets.puffsCereal.src = 'puffs_cereal.png';
 
-const player = { x: 175, y: 750, width: 80, height: 100 };
-const azul = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 };
+const player = { x: 175, y: 750, width: 80, height: 100 }; // The human player
+const enemy = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 }; // The AI
 
-function startGame() {
+function startGame(choice) {
+    playerChar = choice;
     gameState = 'playing';
-    marketShare = 50;
-    mentalLevel = 0;
-    boxes = [];
-    thrownPuffs = [];
+    marketShare = 50; mentalLevel = 0;
+    boxes = []; thrownPuffs = [];
+
+    if (playerChar === 'AZUL') {
+        player.y = 100; // You are at the top
+        enemy.y = 750;  // AI Mochkil at bottom
+    } else {
+        player.y = 750; // You are at bottom
+        enemy.y = 100;  // AI Azul at top
+    }
     requestAnimationFrame(gameLoop);
 }
 
 function update() {
     if (gameState !== 'playing') return;
 
-    azul.x += 2 * azul.dir;
-    if (azul.x > canvas.width - azul.width || azul.x < 0) azul.dir *= -1;
+    // 1. AI MOVEMENT
+    enemy.x += 3 * enemy.dir;
+    if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
+
+    // 2. PROJECTILE LOGIC
+    if (playerChar === 'AZUL') {
+        // AI Mochkil throws at you periodically
+        if (Math.random() > 0.98) {
+            thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
+        }
+    }
 
     thrownPuffs.forEach((puff, pIndex) => {
-        puff.y -= puff.speed;
-        if (puff.x < azul.x + azul.width && puff.x + puff.width > azul.x &&
-            puff.y < azul.y + azul.height && puff.y + puff.height > azul.y && puff.active) {
-            
+        puff.y += (playerChar === 'AZUL') ? -puff.speed : -puff.speed; // Adjust based on who is at bottom
+        
+        // Check collision with the TOP character (Always Azul)
+        let target = (playerChar === 'AZUL') ? player : enemy;
+        if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
+            puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             puff.active = false;
-            marketShare += 5; 
+            marketShare += 5; // Mochkil scores
             mentalLevel += 2;
-            azul.state = 'PATCHING';
-            setTimeout(() => azul.state = 'FLYING', 500);
             thrownPuffs.splice(pIndex, 1);
         }
-        if (puff.y < -100) thrownPuffs.splice(pIndex, 1);
+        if (puff.y < -100 || puff.y > canvas.height) thrownPuffs.splice(pIndex, 1);
     });
 
+    // 3. FALLING BOXES LOGIC
     boxes.forEach((box, index) => {
         box.y += box.speed;
-        if (player.x < box.x + box.width && player.x + player.width > box.x &&
-            player.y < box.y + box.height && player.y + player.height > box.y) {
-            if (!box.isSabotaged) {
+        
+        // MOCHKIL ROLE: Catch normal boxes to sabotage them
+        if (playerChar === 'MOCHKIL' && !box.isSabotaged) {
+            if (player.x < box.x + box.width && player.x + player.width > box.x &&
+                player.y < box.y + box.height && player.y + player.height > box.y) {
                 box.isSabotaged = true;
-                marketShare += 2;
-                mentalLevel += 5;
-                if (typeof triggerShake === "function") triggerShake(200);
+                marketShare += 2; mentalLevel += 5;
+                triggerShake(200);
             }
         }
+
+        // AZUL ROLE: Catch corrupted boxes to FIX them
+        if (playerChar === 'AZUL' && box.isSabotaged) {
+            if (player.x < box.x + box.width && player.x + player.width > box.x &&
+                player.y < box.y + box.height && player.y + player.height > box.y) {
+                box.isSabotaged = false; // Fixed!
+                marketShare -= 4; // Market share drops (Azul win path)
+                player.state = 'PATCHING';
+                setTimeout(() => player.state = 'FLYING', 300);
+            }
+        }
+        
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
+    // 4. WIN/LOSS DETECTION
     marketShare = Math.max(0, Math.min(100, marketShare));
-    mentalLevel = Math.min(200, mentalLevel);
-
     if (marketShare >= 100 || mentalLevel >= 200) {
-        endGame('puffs_commercial.MP4');
+        endGame('puffs_commercial.MP4', "MOCHKIL WINS");
     } else if (marketShare <= 0) {
-        endGame('8bit_azulo.mp4');
+        endGame('8bit_azulo.mp4', "AZUL WINS");
     }
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
-    ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
-    thrownPuffs.forEach(puff => {
-        ctx.drawImage(assets.puffsCereal, puff.x, puff.y, puff.width, puff.height);
-    });
+    // Draw Azul (Check if player or AI)
+    let azulObj = (playerChar === 'AZUL') ? player : enemy;
+    let azulSprite = azulObj.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
+    ctx.drawImage(azulSprite, azulObj.x, azulObj.y, azulObj.width, azulObj.height);
 
-    boxes.forEach(box => {
-        let sprite = box.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
-        ctx.drawImage(sprite, box.x, box.y, box.width, box.height);
-    });
-    
-    ctx.drawImage(assets.mochkil, player.x, player.y, player.width, player.height);
+    // Draw Mochkil (Check if player or AI)
+    let mochObj = (playerChar === 'MOCHKIL') ? player : enemy;
+    ctx.drawImage(assets.mochkil, mochObj.x, mochObj.y, mochObj.width, mochObj.height);
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
-    ctx.drawImage(hat, player.x + 10, player.y - 30, 60, 50);
+    ctx.drawImage(hat, mochObj.x + 10, mochObj.y - 30, 60, 50);
+
+    thrownPuffs.forEach(p => ctx.drawImage(assets.puffsCereal, p.x, p.y, p.width, p.height));
+    boxes.forEach(b => ctx.drawImage(b.isSabotaged ? assets.boxCorrupted : assets.boxNormal, b.x, b.y, b.width, b.height));
 
     document.getElementById('score').innerText = Math.floor(marketShare);
     document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
 
-function endGame(videoFile) {
+function endGame(videoFile, msg) {
     gameState = 'over';
+    document.getElementById('winMessage').innerText = msg;
     const video = document.getElementById('endVideo');
-    const credits = document.getElementById('creditsScreen');
-    
     video.src = videoFile;
     video.style.display = 'block';
-    
-    video.muted = true; // START MUTED TO BYPASS BLOCKS
-    video.setAttribute('playsinline', ''); 
-    video.load();
-    
-    video.play().then(() => {
-        // If sound was enabled in game, unmute the video now
-        if (!isMuted) {
-            video.muted = false; 
-        }
-    }).catch((error) => {
+    video.muted = true;
+    video.play().then(() => { if (!isMuted) video.muted = false; }).catch(() => {
         video.style.display = 'none';
-        credits.style.display = 'flex';
+        document.getElementById('creditsScreen').style.display = 'flex';
     });
-    
     video.onended = () => {
         video.style.display = 'none';
-        credits.style.display = 'flex'; 
+        document.getElementById('creditsScreen').style.display = 'flex'; 
     };
 }
 
@@ -156,41 +165,25 @@ canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     let touch = e.touches[0];
     let rect = canvas.getBoundingClientRect();
-    let newX = (touch.clientX - rect.left) - (player.width / 2);
-    player.x = Math.max(0, Math.min(canvas.width - player.width, newX));
+    player.x = Math.max(0, Math.min(canvas.width - player.width, (touch.clientX - rect.left) - (player.width / 2)));
 }, { passive: false });
 
 canvas.addEventListener('touchstart', (e) => {
-    if (gameState !== 'playing') return;
-    const now = Date.now();
-    if (now - lastThrowTime > 300) { 
-        thrownPuffs.push({
-            x: player.x + 10,
-            y: player.y,
-            width: 60, height: 80,
-            speed: 12, active: true
-        });
-        lastThrowTime = now;
-        if (window.navigator.vibrate) window.navigator.vibrate(15);
+    if (gameState === 'playing' && playerChar === 'MOCHKIL') {
+        const now = Date.now();
+        if (now - lastThrowTime > 300) {
+            thrownPuffs.push({ x: player.x + 10, y: player.y, width: 60, height: 80, speed: 12, active: true });
+            lastThrowTime = now;
+        }
     }
 }, { passive: false });
 
-function gameLoop() {
-    if (gameState === 'playing') {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
-}
-
 setInterval(() => {
     if (gameState === 'playing') {
-        boxes.push({
-            x: Math.random() * (canvas.width - 60),
-            y: -80,
-            width: 60, height: 80,
-            isSabotaged: false,
-            speed: 4 + Math.random() * 3
-        });
+        // Occasionally spawn boxes already sabotaged for Azul to fix
+        let sabotaged = (playerChar === 'AZUL') ? (Math.random() > 0.5) : false;
+        boxes.push({ x: Math.random() * (canvas.width - 60), y: -80, width: 60, height: 80, isSabotaged: sabotaged, speed: 4 + Math.random() * 3 });
     }
 }, 1000);
+
+function gameLoop() { if (gameState === 'playing') { update(); draw(); requestAnimationFrame(gameLoop); } }
