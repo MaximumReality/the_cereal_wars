@@ -1,12 +1,12 @@
 {
-  "short_name": "Mochkil",
+  "short_name": "Cereal Wars",
   "name": "Mochkil Puffs: Sabotage",
   "icons": [
     {
       "src": "azulos_corrupted.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "start_url": "./index.html",
