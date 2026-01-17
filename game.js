@@ -13,7 +13,6 @@ let thrownPuffs = [];
 let isMuted = true;
 let lastThrowTime = 0;
 
-// Audio setup
 let bgMusic = new Audio('cereal_wars.mp3'); 
 bgMusic.loop = true;
 
@@ -71,48 +70,39 @@ function startGame(choice) {
 function update() {
     if (gameState !== 'playing') return;
 
-    // Enemy movement
     enemy.x += 3 * enemy.dir;
     if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
 
-    // Enemy firing puffs if player is Azul
-    if (playerChar === 'AZUL' && Math.random() > 0.98) {
+    // NPC firing logic
+    if (playerChar === 'AZUL' && Math.random() > 0.97) {
+        // NPC Mochkil (at bottom) throws UP at Azul
         thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
     }
 
-       // Update Projectiles
+    // Update Projectiles
     for (let i = thrownPuffs.length - 1; i >= 0; i--) {
         let puff = thrownPuffs[i];
         
-        // FIX: If Mochkil is the PLAYER (at bottom), fly UP (-speed). 
-        // If Mochkil is the NPC (at top), fly DOWN (+speed).
+        // Direction logic: Puffs go UP if thrown from bottom, DOWN if thrown from top
         if (playerChar === 'MOCHKIL') {
             puff.y -= puff.speed; // Player Mochkil shoots up
         } else {
             puff.y += puff.speed; // NPC Mochkil shoots down at Azul
         }
-        
-        // Target logic
+
         let target = (playerChar === 'AZUL') ? player : enemy;
         if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
             puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             puff.active = false;
-            marketShare += (playerChar === 'MOCHKIL') ? 5 : -5; // NPC hits hurt Azul's share
+            marketShare += (playerChar === 'MOCHKIL') ? 5 : -5;
             mentalLevel += 2;
             thrownPuffs.splice(i, 1);
-        } else if (puff.y < -100 || puff.y > canvas.height + 100) {
-            thrownPuffs.splice(i, 1);
         }
+        if (puff.y < -100 || puff.y > canvas.height + 100) thrownPuffs.splice(i, 1);
     }
 
-    }
-
-    // Update Boxes
-    for (let i = boxes.length - 1; i >= 0; i--) {
-        let box = boxes[i];
+    boxes.forEach((box, index) => {
         box.y += box.speed;
-        
-        // Mochkil sabotages boxes
         if (playerChar === 'MOCHKIL' && !box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
@@ -121,32 +111,25 @@ function update() {
                 mentalLevel += 5;
             }
         }
-        // Azul patches boxes
         if (playerChar === 'AZUL' && box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
                 box.isSabotaged = false; 
                 marketShare -= 4; 
                 player.state = 'PATCHING';
-                setTimeout(() => { if(gameState === 'playing') player.state = 'FLYING'; }, 300);
+                setTimeout(() => player.state = 'FLYING', 300);
             }
         }
-        if (box.y > canvas.height) boxes.splice(i, 1);
-    }
+        if (box.y > canvas.height) boxes.splice(index, 1);
+    });
 
-       // Win/Loss Condition
     marketShare = Math.max(0, Math.min(100, marketShare));
-    
     if (marketShare >= 100 || mentalLevel >= 200) {
         gameState = 'over';
-        // Mochkil wins
-        window.endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
+        if (typeof endGame === 'function') endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
     } else if (marketShare <= 0) {
         gameState = 'over';
-        // Azul wins
-        window.endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
-    }
-
+        if (typeof endGame === 'function') endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
     }
 }
 
@@ -179,7 +162,6 @@ function gameLoop() {
     } 
 }
 
-// Controls
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     let touch = e.touches[0];
@@ -198,7 +180,6 @@ canvas.addEventListener('touchstart', (e) => {
     }
 }, { passive: false });
 
-// Spawning Boxes
 setInterval(() => {
     if (gameState === 'playing') {
         let sabotaged = (playerChar === 'AZUL') ? (Math.random() > 0.4) : false;
