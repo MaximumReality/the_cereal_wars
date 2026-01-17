@@ -1,35 +1,27 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Set canvas resolution for iPhone 14 Pro Max
 canvas.width = 430;
 canvas.height = 932;
 
-// Game State & Variables
 let gameState = 'waiting';
 let marketShare = 50; 
 let mentalLevel = 0;
 let boxes = [];
-let score = 0;
 
-// Asset Registry
 const assets = {
     mochkil: new Image(),
     beanie: new Image(),
     chefHat: new Image(),
     badge: new Image(),
-    // Enemies
-    flyAzulo: new Image(),      // Blue eyes
-    holdingAzulo: new Image(),  // Azul patching
-    flailAzulo: new Image(),    // Green glow
-    // Boxes
-    boxNormal: new Image(),     // azulos_special
-    boxCorrupted: new Image(),  // azulos_corrupted
-    // Endings
-    thiefMochkil: new Image()   // Defeat sprite
+    flyAzulo: new Image(),
+    holdingAzulo: new Image(),
+    flailAzulo: new Image(),
+    boxNormal: new Image(),
+    boxCorrupted: new Image(),
+    thiefMochkil: new Image()
 };
 
-// Mapping filenames provided
 assets.mochkil.src = 'thief_no_cereal.png';
 assets.beanie.src = 'beanie.png';
 assets.chefHat.src = 'chef-hat.png';
@@ -52,7 +44,6 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
-// Spawner: Drops Azulo's boxes from the top
 setInterval(() => {
     if (gameState === 'playing') {
         boxes.push({
@@ -69,14 +60,10 @@ setInterval(() => {
 function update() {
     if (gameState !== 'playing') return;
 
-    // 1. Update Boxes
     boxes.forEach((box, index) => {
         box.y += box.speed;
-
-        // Collision detection: Mochkil hits a box
         if (player.x < box.x + box.width && player.x + player.width > box.x &&
             player.y < box.y + box.height && player.y + player.height > box.y) {
-            
             if (!box.isSabotaged) {
                 box.isSabotaged = true;
                 marketShare += 2;
@@ -87,7 +74,6 @@ function update() {
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
-    // 2. Azul's "Patching" AI
     if (Math.random() > 0.98 && boxes.some(b => b.isSabotaged)) {
         azul.state = 'PATCHING';
         let target = boxes.find(b => b.isSabotaged);
@@ -100,77 +86,61 @@ function update() {
         }, 500);
     }
 
-    // 3. Victory/Defeat Checks
-    if (marketShare >= 100) endGame('puffs_commercial.MP4');
-    if (marketShare <= 0) endGame('8bit_azulo.mp4');
+    // CLAMPING & WIN/LOSS CHECKS
+    marketShare = Math.max(0, Math.min(100, marketShare));
+    mentalLevel = Math.min(200, mentalLevel);
+
+    if (marketShare >= 100 || mentalLevel >= 200) {
+        endGame('puffs_commercial.MP4');
+    } else if (marketShare <= 0) {
+        endGame('8bit_azulo.mp4');
+    }
 }
-// Mental overload ending (prevents freeze)
-if (mentalLevel >= 200) {
-    mentalLevel = 200;
-    endGame('puffs_commercial.mp4'); // or a custom mental ending
-    return;
-}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Azul (Flying vs Patching)
+    // 1. Draw Azul
     let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
+    // 2. Draw Boxes
     boxes.forEach(box => {
-    let sprite;
-
-    if (box.isSabotaged) {
-        sprite = assets.boxCorrupted;
-    } else {
-        sprite = assets.boxNormal;
-    }
-
-    ctx.drawImage(
-        sprite,
-        box.x,
-        box.y,
-        box.width,
-        box.height
-    );
-});
+        let sprite = box.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
+        ctx.drawImage(sprite, box.x, box.y, box.width, box.height);
+    });
     
-    // Draw Mochkil
+    // 3. Draw Mochkil
     ctx.drawImage(assets.mochkil, player.x, player.y, player.width, player.height);
     
-    // Hat Logic: Beanie if Mental, Chef Hat if cooling down
+    // 4. Draw Hat
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
     ctx.drawImage(hat, player.x + 10, player.y - 30, 60, 50);
 
-    // Update UI
     document.getElementById('score').innerText = Math.floor(marketShare);
     document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
 
 function endGame(videoFile) {
     gameState = 'over';
-    if (bgMusic) bgMusic.pause();
-
     const video = document.getElementById('endVideo');
     const credits = document.getElementById('creditsScreen');
-    
     video.src = videoFile;
     video.style.display = 'block';
     video.play();
-    
     video.onended = () => {
         video.style.display = 'none';
-        // Show the credits instead of a direct reload
         credits.style.display = 'flex'; 
     };
 }
 
-// Mobile Touch Control
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     let touch = e.touches[0];
     let rect = canvas.getBoundingClientRect();
-    player.x = (touch.clientX - rect.left) - (player.width / 2);
+    let newX = (touch.clientX - rect.left) - (player.width / 2);
+    // Keep Mochkil inside the screen
+    player.x = Math.max(0, Math.min(canvas.width - player.width, newX));
 }, { passive: false });
 
 function gameLoop() {
