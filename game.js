@@ -69,6 +69,7 @@ function startGame(choice) {
 }
 
 function update() {
+    // Only update if we are actively playing
     if (gameState !== 'playing') return;
 
     // 1. AI Movement Logic
@@ -82,9 +83,9 @@ function update() {
 
     // 3. Projectile Physics
     thrownPuffs.forEach((puff, pIndex) => {
-        puff.y -= puff.speed; // Always fly upward
+        puff.y -= puff.speed; 
         
-        let target = (playerChar === 'AZUL') ? player : enemy; // Collision target is always the one at the top (Azul)
+        let target = (playerChar === 'AZUL') ? player : enemy;
         if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
             puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             
@@ -100,7 +101,6 @@ function update() {
     boxes.forEach((box, index) => {
         box.y += box.speed;
         
-        // MOCHKIL ROLE: Catch normal boxes to sabotage them
         if (playerChar === 'MOCHKIL' && !box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
@@ -111,7 +111,6 @@ function update() {
             }
         }
 
-        // AZUL ROLE: Catch corrupted boxes to fix them
         if (playerChar === 'AZUL' && box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
@@ -124,11 +123,14 @@ function update() {
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
-    // 5. Win/Loss Logic
+    // 5. Win/Loss Logic (ONLY TRIGGERS ONCE)
     marketShare = Math.max(0, Math.min(100, marketShare));
+    
     if (marketShare >= 100 || mentalLevel >= 200) {
+        gameState = 'over'; // Change state IMMEDIATELY to stop the loop
         endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
     } else if (marketShare <= 0) {
+        gameState = 'over'; // Change state IMMEDIATELY to stop the loop
         endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
     }
 }
