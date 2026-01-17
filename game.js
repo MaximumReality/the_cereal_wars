@@ -35,8 +35,9 @@ const assets = {
     badge: new Image(),
     flyAzulo: new Image(),
     holdingAzulo: new Image(),
-    boxNormal: new Image(),     
-    boxCorrupted: new Image()    
+    boxNormal: new Image(),     // Azulo's Box
+    boxCorrupted: new Image(),  // Glitched falling box
+    puffsCereal: new Image()    // The projectile Mochkil throws
 };
 
 assets.mochkil.src = 'thief_no_cereal.png';
@@ -47,6 +48,7 @@ assets.flyAzulo.src = 'flyazulo.png';
 assets.holdingAzulo.src = 'holding_azulos.png';
 assets.boxNormal.src = 'azulos_special.png';
 assets.boxCorrupted.src = 'azulos_corrupted.png';
+assets.puffsCereal.src = 'puffs_cereal.png'; // New Attack Asset
 
 // --- Entities ---
 const player = { x: 175, y: 750, width: 80, height: 100 };
@@ -118,9 +120,9 @@ function draw() {
     let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
-    // Draw Thrown Puffs
+    // Draw Thrown Puffs (Using puffs_cereal.png)
     thrownPuffs.forEach(puff => {
-        ctx.drawImage(assets.boxCorrupted, puff.x, puff.y, puff.width, puff.height);
+        ctx.drawImage(assets.puffsCereal, puff.x, puff.y, puff.width, puff.height);
     });
 
     // Draw Falling Boxes
