@@ -1,15 +1,17 @@
 {
-  "name": "Mochkil Puffs: Sabotage",
   "short_name": "Mochkil",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#ff9900",
+  "name": "Mochkil Puffs: Sabotage",
   "icons": [
     {
       "src": "azulos_corrupted.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#ff9900"
 }
