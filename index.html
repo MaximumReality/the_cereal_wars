@@ -170,6 +170,19 @@
     video.onended = transitionToCredits;
     skipBtn.onclick = transitionToCredits;
 }
+// Prevent the whole page from scrolling/bouncing on touch
+document.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+}, { passive: false });
+
+// Force the canvas to resize to the actual container size
+function resize() {
+    const container = document.getElementById('game-container');
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
 
     </script>
 </body>
