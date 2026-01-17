@@ -125,6 +125,27 @@
             if (window.navigator.vibrate) window.navigator.vibrate(20);
         }
 
+        function handleStart(choice) {
+    document.getElementById('startScreen').style.display = 'none';
+
+    // NEW: "Prime" the video for sound later
+    const video = document.getElementById('endVideo');
+    video.play().then(() => {
+        video.pause();
+        video.currentTime = 0;
+        video.muted = false; // This "unlocks" the sound for later
+    }).catch(() => {});
+
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.muted = isMuted;
+        if (!isMuted) bgMusic.play().catch(() => {});
+    }
+
+    if (typeof startGame === "function") {
+        startGame(choice);
+    }
+
+
         function endGame(videoFile, msg) {
             if (isEnding) return;
             isEnding = true;
