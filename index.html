@@ -10,29 +10,26 @@
         #game-container { position: relative; width: 100vw; height: 100vh; max-width: 430px; max-height: 932px; background: #111; overflow: hidden; border: 2px solid var(--neon-orange); }
         canvas { display: block; width: 100%; height: 100%; }
         
-        /* UI FIX: High z-index keeps stats visible */
         #ui { position: absolute; top: 50px; width: 100%; display: flex; justify-content: space-around; pointer-events: none; z-index: 200; }
-        
         .stat-box { background: rgba(0, 0, 0, 0.8); padding: 10px; border: 1px solid var(--neon-orange); color: #fff; text-align: center; min-width: 80px; }
         #badge-container { position: absolute; bottom: 20px; right: 20px; width: 80px; z-index: 10; opacity: 0.9; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; background: rgba(0,0,0,0.85); }
         button { padding: 20px 40px; font-size: 20px; background: var(--neon-orange); color: #000; border: none; font-weight: bold; box-shadow: 0 0 20px var(--neon-orange); cursor: pointer; pointer-events: auto; }
-        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 150; display: none; }
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 150; display: none; background: black; }
         .shake { animation: shake 0.15s infinite; }
         @keyframes shake { 0% { transform: translate(2px, 2px); } 25% { transform: translate(-2px, -2px); } 100% { transform: translate(0, 0); } }
 
         #skipVideo {
-    background: rgba(0, 0, 0, 0.7);
-    color: var(--quantum-blue);
-    border: 1px solid var(--quantum-blue);
-    border-radius: 4px;
-    padding: 8px 16px;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    text-transform: uppercase;
-    box-shadow: 0 0 10px var(--quantum-blue);
-}
-
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--quantum-blue);
+            border: 1px solid var(--quantum-blue);
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 0 10px var(--quantum-blue);
+        }
     </style>  
 </head>
 <body>
@@ -63,80 +60,72 @@
             <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
 
-        <video id="endVideo" playsinline muted></video>
+        <video id="endVideo" playsinline></video>
         <button id="skipVideo" style="display:none; position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:200; font-size:14px; padding:10px 20px;">SKIP TO CREDITS</button>
-
     </div>
 
     <script src="game.js"></script>
     <script>
+        // Use a flag to prevent endGame from running multiple times
+        let isEnding = false;
+
         function initGame(choice) {
             document.getElementById('startScreen').style.display = 'none';
-            
-            // Prime the cereal_wars.mp3 jingle
             if (typeof bgMusic !== 'undefined') {
                 bgMusic.play().then(() => { 
                     if (isMuted) bgMusic.pause(); 
-                }).catch(e => console.log("Audio waiting for user interaction"));
+                }).catch(e => console.log("Waiting for user interaction"));
             }
-
             if (typeof startGame === "function") {
                 startGame(choice);
             }
         }
-function endGame(videoFile, msg) {
-    // Only trigger if we aren't already in 'over' state
-    if (gameState === 'over') return;
-    gameState = 'over';
-    
-    // 1. SILENCE THE THEME MUSIC
-    // This clears the "audio lane" so Safari allows the video to play with sound
-    if (typeof bgMusic !== 'undefined') {
-        bgMusic.pause();
-    }
-    
-    document.getElementById('winMessage').innerText = msg;
-    const video = document.getElementById('endVideo');
-    const credits = document.getElementById('creditsScreen');
-    const skipBtn = document.getElementById('skipVideo');
-    
-    // 2. Setup the Video
-    video.src = videoFile;
-    video.style.display = 'block';
-    video.muted = true; // Still required for the initial "handshake"
-    video.setAttribute('playsinline', ''); 
-    video.load();
-    
-    // 3. Play and Force Unmute
-    video.play().then(() => {
-        skipBtn.style.display = 'block';
-        
-        // Wait a beat for the video to move, then flip the sound on
-        setTimeout(() => {
-            if (!isMuted) {
-                video.muted = false; 
-                video.volume = 1.0;
-            }
-        }, 250); // Slightly longer delay for iPhone 14 Pro Max stability
-    }).catch((error) => {
-        console.log("Playback Error:", error);
-        transitionToCredits();
-    });
 
-    const transitionToCredits = () => {
-        video.pause();
-        video.style.display = 'none';
-        skipBtn.style.display = 'none';
-        credits.style.display = 'flex';
-        
-        // Optional: Bring the theme song back for the credits
-        if (!isMuted) bgMusic.play().catch(() => {});
-    };
+        function endGame(videoFile, msg) {
+            if (isEnding) return;
+            isEnding = true;
+            
+            // 1. Stop Music and Game
+            if (typeof bgMusic !== 'undefined') bgMusic.pause();
+            
+            document.getElementById('winMessage').innerText = msg;
+            const video = document.getElementById('endVideo');
+            const credits = document.getElementById('creditsScreen');
+            const skipBtn = document.getElementById('skipVideo');
+            
+            // 2. Prepare Video
+            video.src = videoFile;
+            video.style.display = 'block';
+            video.muted = true; // Safari requirement to start
+            video.load();
+            
+            // 3. Play and Unmute
+            video.play().then(() => {
+                skipBtn.style.display = 'block';
+                // Small delay helps Safari stabilize the audio channel
+                setTimeout(() => {
+                    if (!isMuted) {
+                        video.muted = false;
+                        video.volume = 1.0;
+                    }
+                }, 300);
+            }).catch((error) => {
+                console.log("Video Playback Error:", error);
+                transitionToCredits();
+            });
 
-    video.onended = transitionToCredits;
-    skipBtn.onclick = transitionToCredits;
-}
+            const transitionToCredits = () => {
+                video.pause();
+                video.src = ""; // Stop loading data
+                video.style.display = 'none';
+                skipBtn.style.display = 'none';
+                credits.style.display = 'flex';
+                if (!isMuted && typeof bgMusic !== 'undefined') bgMusic.play().catch(() => {});
+            };
 
+            video.onended = transitionToCredits;
+            skipBtn.onclick = transitionToCredits;
+        }
 
         function triggerShake(duration) {
             const container = document.getElementById('game-container');
