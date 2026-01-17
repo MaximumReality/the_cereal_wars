@@ -81,18 +81,20 @@ function update() {
             if (target) {
                 target.isSabotaged = false;
                 marketShare -= 5;
+                marketShare = Math.max(0, marketShare); // Ensure it stops at 0
             }
             azul.state = 'FLYING';
         }, 500);
     }
 
-    // CLAMPING & WIN/LOSS CHECKS
     marketShare = Math.max(0, Math.min(100, marketShare));
     mentalLevel = Math.min(200, mentalLevel);
 
     if (marketShare >= 100 || mentalLevel >= 200) {
+        gameState = 'over';
         endGame('puffs_commercial.MP4');
     } else if (marketShare <= 0) {
+        gameState = 'over';
         endGame('8bit_azulo.mp4');
     }
 }
@@ -100,20 +102,16 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Draw Azul
     let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
-    // 2. Draw Boxes
     boxes.forEach(box => {
         let sprite = box.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
         ctx.drawImage(sprite, box.x, box.y, box.width, box.height);
     });
     
-    // 3. Draw Mochkil
     ctx.drawImage(assets.mochkil, player.x, player.y, player.width, player.height);
     
-    // 4. Draw Hat
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
     ctx.drawImage(hat, player.x + 10, player.y - 30, 60, 50);
 
@@ -122,12 +120,18 @@ function draw() {
 }
 
 function endGame(videoFile) {
-    gameState = 'over';
     const video = document.getElementById('endVideo');
     const credits = document.getElementById('creditsScreen');
+    
     video.src = videoFile;
     video.style.display = 'block';
-    video.play();
+    video.load(); 
+    
+    video.play().catch(e => {
+        video.style.display = 'none';
+        credits.style.display = 'flex';
+    });
+    
     video.onended = () => {
         video.style.display = 'none';
         credits.style.display = 'flex'; 
@@ -139,7 +143,6 @@ canvas.addEventListener('touchmove', (e) => {
     let touch = e.touches[0];
     let rect = canvas.getBoundingClientRect();
     let newX = (touch.clientX - rect.left) - (player.width / 2);
-    // Keep Mochkil inside the screen
     player.x = Math.max(0, Math.min(canvas.width - player.width, newX));
 }, { passive: false });
 
