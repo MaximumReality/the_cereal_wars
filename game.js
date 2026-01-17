@@ -1,7 +1,11 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 430; canvas.height = 932;
 
+// Optimized for iPhone 14 Pro Max display
+canvas.width = 430;
+canvas.height = 932;
+
+// --- Game State ---
 let gameState = 'waiting';
 let playerChar = 'MOCHKIL'; 
 let marketShare = 50; 
@@ -11,9 +15,11 @@ let thrownPuffs = [];
 let isMuted = true;
 let lastThrowTime = 0;
 
-let bgMusic = new Audio('cereal_war_theme.mp3'); 
+// --- Audio ---
+let bgMusic = new Audio('cereal_wars.mp3'); 
 bgMusic.loop = true;
 
+// Mute Toggle Logic
 document.getElementById('muteToggle').addEventListener('click', (e) => {
     e.stopPropagation(); 
     isMuted = !isMuted;
@@ -22,6 +28,7 @@ document.getElementById('muteToggle').addEventListener('click', (e) => {
     if (!isMuted) bgMusic.play().catch(() => {});
 });
 
+// --- Assets ---
 const assets = {
     mochkil: new Image(), beanie: new Image(), chefHat: new Image(),
     flyAzulo: new Image(), holdingAzulo: new Image(),
@@ -37,20 +44,23 @@ assets.boxNormal.src = 'azulos_special.png';
 assets.boxCorrupted.src = 'azulos_corrupted.png';
 assets.puffsCereal.src = 'puffs_cereal.png';
 
-const player = { x: 175, y: 750, width: 80, height: 100 }; // The human player
-const enemy = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 }; // The AI
+// Entities
+const player = { x: 175, y: 750, width: 80, height: 100, state: 'FLYING' };
+const enemy = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 };
 
 function startGame(choice) {
     playerChar = choice;
     gameState = 'playing';
-    marketShare = 50; mentalLevel = 0;
-    boxes = []; thrownPuffs = [];
+    marketShare = 50; 
+    mentalLevel = 0;
+    boxes = []; 
+    thrownPuffs = [];
 
     if (playerChar === 'AZUL') {
-        player.y = 100; // You are at the top
+        player.y = 100; // Human Azul at top
         enemy.y = 750;  // AI Mochkil at bottom
     } else {
-        player.y = 750; // You are at bottom
+        player.y = 750; // Human Mochkil at bottom
         enemy.y = 100;  // AI Azul at top
     }
     requestAnimationFrame(gameLoop);
@@ -59,62 +69,59 @@ function startGame(choice) {
 function update() {
     if (gameState !== 'playing') return;
 
-    // 1. AI MOVEMENT
+    // 1. AI Movement
     enemy.x += 3 * enemy.dir;
     if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
 
-    // 2. PROJECTILE LOGIC
-    if (playerChar === 'AZUL') {
-        // AI Mochkil throws at you periodically
-        if (Math.random() > 0.98) {
-            thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
-        }
+    // 2. AI Attacks (If you are Azul, AI Mochkil throws Puffs at you)
+    if (playerChar === 'AZUL' && Math.random() > 0.98) {
+        thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
     }
 
+    // 3. Projectile Physics
     thrownPuffs.forEach((puff, pIndex) => {
-        puff.y += (playerChar === 'AZUL') ? -puff.speed : -puff.speed; // Adjust based on who is at bottom
+        puff.y -= puff.speed; // Puffs always launch UP from Mochkil
         
-        // Check collision with the TOP character (Always Azul)
         let target = (playerChar === 'AZUL') ? player : enemy;
         if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
             puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             puff.active = false;
-            marketShare += 5; // Mochkil scores
+            marketShare += 5; // Puffs hit increases market share
             mentalLevel += 2;
             thrownPuffs.splice(pIndex, 1);
         }
-        if (puff.y < -100 || puff.y > canvas.height) thrownPuffs.splice(pIndex, 1);
+        if (puff.y < -100) thrownPuffs.splice(pIndex, 1);
     });
 
-    // 3. FALLING BOXES LOGIC
+    // 4. Box Interactions
     boxes.forEach((box, index) => {
         box.y += box.speed;
         
-        // MOCHKIL ROLE: Catch normal boxes to sabotage them
+        // MOCHKIL ROLE: Catch normal boxes to sabotage
         if (playerChar === 'MOCHKIL' && !box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
                 box.isSabotaged = true;
-                marketShare += 2; mentalLevel += 5;
-                triggerShake(200);
+                marketShare += 2; 
+                mentalLevel += 5;
+                if (typeof triggerShake === "function") triggerShake(200);
             }
         }
 
-        // AZUL ROLE: Catch corrupted boxes to FIX them
+        // AZUL ROLE: Catch corrupted boxes to fix
         if (playerChar === 'AZUL' && box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
-                box.isSabotaged = false; // Fixed!
-                marketShare -= 4; // Market share drops (Azul win path)
+                box.isSabotaged = false; 
+                marketShare -= 4; // Azul drops share to win
                 player.state = 'PATCHING';
                 setTimeout(() => player.state = 'FLYING', 300);
             }
         }
-        
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
-    // 4. WIN/LOSS DETECTION
+    // Win/Loss
     marketShare = Math.max(0, Math.min(100, marketShare));
     if (marketShare >= 100 || mentalLevel >= 200) {
         endGame('puffs_commercial.MP4', "MOCHKIL WINS");
@@ -126,20 +133,22 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Azul (Check if player or AI)
+    // Render Azul
     let azulObj = (playerChar === 'AZUL') ? player : enemy;
     let azulSprite = azulObj.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azulObj.x, azulObj.y, azulObj.width, azulObj.height);
 
-    // Draw Mochkil (Check if player or AI)
+    // Render Mochkil
     let mochObj = (playerChar === 'MOCHKIL') ? player : enemy;
     ctx.drawImage(assets.mochkil, mochObj.x, mochObj.y, mochObj.width, mochObj.height);
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
     ctx.drawImage(hat, mochObj.x + 10, mochObj.y - 30, 60, 50);
 
+    // Items
     thrownPuffs.forEach(p => ctx.drawImage(assets.puffsCereal, p.x, p.y, p.width, p.height));
     boxes.forEach(b => ctx.drawImage(b.isSabotaged ? assets.boxCorrupted : assets.boxNormal, b.x, b.y, b.width, b.height));
 
+    // Update UI Elements
     document.getElementById('score').innerText = Math.floor(marketShare);
     document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
@@ -155,12 +164,9 @@ function endGame(videoFile, msg) {
         video.style.display = 'none';
         document.getElementById('creditsScreen').style.display = 'flex';
     });
-    video.onended = () => {
-        video.style.display = 'none';
-        document.getElementById('creditsScreen').style.display = 'flex'; 
-    };
 }
 
+// Controls
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     let touch = e.touches[0];
@@ -178,12 +184,11 @@ canvas.addEventListener('touchstart', (e) => {
     }
 }, { passive: false });
 
+function gameLoop() { if (gameState === 'playing') { update(); draw(); requestAnimationFrame(gameLoop); } }
+
 setInterval(() => {
     if (gameState === 'playing') {
-        // Occasionally spawn boxes already sabotaged for Azul to fix
-        let sabotaged = (playerChar === 'AZUL') ? (Math.random() > 0.5) : false;
+        let sabotaged = (playerChar === 'AZUL') ? (Math.random() > 0.4) : false;
         boxes.push({ x: Math.random() * (canvas.width - 60), y: -80, width: 60, height: 80, isSabotaged: sabotaged, speed: 4 + Math.random() * 3 });
     }
 }, 1000);
-
-function gameLoop() { if (gameState === 'playing') { update(); draw(); requestAnimationFrame(gameLoop); } }
