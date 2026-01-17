@@ -7,61 +7,116 @@
     <style>
         :root {
             --neon-orange: #ff9900;
-            --quantum-purple: #b026ff;
+            --quantum-blue: #00f2ff;
         }
         body { 
             margin: 0; 
+            padding: 0;
             background-color: #000; 
             display: flex; 
-            flex-direction: column;
             justify-content: center; 
             align-items: center; 
             height: 100vh;
             overflow: hidden;
             font-family: 'Courier New', Courier, monospace;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
         }
-        /* The Arcade Cabinet Look */
+
         #game-container {
             position: relative;
-            border: 5px solid var(--neon-orange);
-            box-shadow: 0 0 20px var(--neon-orange);
-            width: 90vw;
-            height: 80vh;
-            max-width: 430px; /* iPhone 14 Pro Max width approx */
+            width: 100vw;
+            height: 100vh;
+            max-width: 430px; /* iPhone 14 Pro Max Width */
+            max-height: 932px; /* iPhone 14 Pro Max Height */
             background: #111;
+            overflow: hidden;
+            border: 2px solid var(--neon-orange);
         }
+
         canvas {
             display: block;
             width: 100%;
             height: 100%;
-            /* Keep our yarn sprites crisp */
-            image-rendering: pixelated;
+            image-rendering: auto; /* Keeps your high-def Sora/Amigurumi textures smooth */
         }
-        /* UI Overlay */
+
+        /* UI Layer */
         #ui {
             position: absolute;
-            top: 10px;
+            top: 50px; /* Adjusted for iPhone notch */
             width: 100%;
             display: flex;
             justify-content: space-around;
-            color: #fff;
-            text-shadow: 2px 2px #000;
             pointer-events: none;
             z-index: 10;
         }
-        .mental-meter {
-            color: var(--neon-orange);
-            font-weight: bold;
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border: 1px solid var(--neon-orange);
+            color: #fff;
+            text-align: center;
         }
-        /* The "Shake" Effect for when Mochkil goes mental */
+
+        #badge-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.9;
+        }
+
+        /* Screens & Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: rgba(0,0,0,0.85);
+        }
+
+        button {
+            padding: 20px 40px;
+            font-size: 20px;
+            background: var(--neon-orange);
+            color: #000;
+            border: none;
+            font-weight: bold;
+            font-family: inherit;
+            box-shadow: 0 0 20px var(--neon-orange);
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 150;
+            display: none;
+        }
+
+        /* The "Mental" Shake */
         .shake {
-            animation: shake 0.2s infinite;
+            animation: shake 0.15s infinite;
         }
         @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            40% { transform: translate(3px, 2px) rotate(-1deg); }
-            100% { transform: translate(1px, -2px) rotate(0deg); }
+            0% { transform: translate(2px, 2px); }
+            25% { transform: translate(-2px, -2px); }
+            50% { transform: translate(2px, -2px); }
+            75% { transform: translate(-2px, 2px); }
+            100% { transform: translate(0, 0); }
         }
     </style>
 </head>
@@ -69,22 +124,40 @@
 
     <div id="game-container">
         <div id="ui">
-            <div>MARKET SHARE: <span id="score">0</span>%</div>
-            <div class="mental-meter">MENTAL: <span id="rage">0</span>%</div>
+            <div class="stat-box">MARKET<br><span id="score">50</span>%</div>
+            <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div>
         </div>
-        
+
+        <div id="badge-container">
+            <img src="credibility_badge.png" alt="Trusted in 15 Realities" style="width:100%;">
+        </div>
+
         <canvas id="gameCanvas"></canvas>
+
+        <div id="startScreen" class="overlay">
+            <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
+            <p style="color:white; font-size:12px; margin-bottom:20px;">STRETCH THE REALITY OF SNACKS</p>
+            <button onclick="initGame()">START WAR</button>
+        </div>
+
+        <video id="endVideo" playsinline></video>
     </div>
 
     <script src="game.js"></script>
     <script>
-        // Quick Script to handle the "Mental" Shake
-        const container = document.getElementById('game-container');
-        function goMental() {
-            container.classList.add('shake');
-            setTimeout(() => container.classList.remove('shake'), 1000);
+        function initGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            if (typeof startGame === "function") {
+                startGame(); // Starts the logic in your game.js
+            }
         }
-        // Call goMental() in your JS whenever Mochkil eats a puff!
+
+        // Hook for the "Mental" shake effect
+        function triggerShake(duration) {
+            const container = document.getElementById('game-container');
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), duration);
+        }
     </script>
 </body>
 </html>
