@@ -126,47 +126,69 @@
         }
 
         function endGame(videoFile, msg) {
-            if (isEnding) return;
-            isEnding = true;
-            
-            if (typeof bgMusic !== 'undefined') {
-                bgMusic.pause();
-                bgMusic.src = "";
-                bgMusic.load();
-            }
-            
-            document.getElementById('winMessage').innerText = msg;
-            const video = document.getElementById('endVideo');
-            const credits = document.getElementById('creditsScreen');
-            const skipBtn = document.getElementById('skipVideo');
-            const canvas = document.getElementById('gameCanvas');
+    if (isEnding) return;
+    isEnding = true;
+    
+    // 1. THE TRIPLE-KILL: Completely destroy the music object
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.pause();
+        bgMusic.muted = true;
+        bgMusic.src = ""; // Empty the source
+        bgMusic.load();   // Force the buffer to clear
+        // Don't restart it until the credits!
+    }
+    
+    document.getElementById('winMessage').innerText = msg;
+    const video = document.getElementById('endVideo');
+    const credits = document.getElementById('creditsScreen');
+    const skipBtn = document.getElementById('skipVideo');
+    const canvas = document.getElementById('gameCanvas');
 
-            canvas.style.display = 'none';
-            video.src = videoFile;
-            video.style.display = 'block';
-            video.muted = true;
+    canvas.style.display = 'none';
+
+    // 2. Prepare the video - use the lowercase .mp4 for Azul
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; // Start muted to bypass the iOS "Auto-Pause"
+    video.load();
+    
+    // 3. The "Heavy Handshake": Wait 300ms for the audio hardware to settle
+    setTimeout(() => {
+        video.play().then(() => {
+            skipBtn.style.display = 'block';
             
-            video.load();
+            // 4. Gradual Unmute: Wait for the eyes to move past the first second
             setTimeout(() => {
-                video.play().then(() => {
-                    skipBtn.style.display = 'block';
-                    setTimeout(() => {
-                        if (!isMuted) { video.muted = false; video.volume = 1.0; }
-                    }, 1000);
-                }).catch(() => transitionToCredits());
-            }, 100);
+                if (!isMuted) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                }
+            }, 1200); 
+        }).catch((err) => {
+            console.log("Playback failed, skipping to credits", err);
+            transitionToCredits();
+        });
+    }, 300);
 
-            const transitionToCredits = () => {
-                video.pause();
-                video.src = "";
-                video.style.display = 'none';
-                skipBtn.style.display = 'none';
-                credits.style.display = 'flex';
-            };
-
-            video.onended = transitionToCredits;
-            skipBtn.onclick = transitionToCredits;
+    const transitionToCredits = () => {
+        video.pause();
+        video.src = "";
+        video.style.display = 'none';
+        skipBtn.style.display = 'none';
+        credits.style.display = 'flex';
+        
+        // Only bring music back once video is totally gone
+        if (!isMuted) {
+            bgMusic.src = "cereal_wars.mp3";
+            bgMusic.load();
+            bgMusic.play().catch(() => {});
         }
+    };
+
+    video.onended = transitionToCredits;
+    skipBtn.onclick = transitionToCredits;
+}
+
     </script>
 </body>
 </html>
