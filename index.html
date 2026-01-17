@@ -59,45 +59,59 @@
         }
 
         function endGame(videoFile, msg) {
-            if (isEnding) return;
-            isEnding = true;
-            
-            if (typeof bgMusic !== 'undefined') {
-                bgMusic.pause();
-                bgMusic.currentTime = 0;
+    if (isEnding) return;
+    isEnding = true;
+    
+    // 1. Stop everything else
+    if (typeof bgMusic !== 'undefined') bgMusic.pause();
+    
+    document.getElementById('winMessage').innerText = msg;
+    const video = document.getElementById('endVideo');
+    const credits = document.getElementById('creditsScreen');
+    const skipBtn = document.getElementById('skipVideo');
+    
+    // 2. Clear canvas to free up GPU memory for the video
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'none'; // Hide canvas so video is the only focus
+
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; // Stay muted for the start
+    video.setAttribute('autoplay', ''); 
+    video.setAttribute('playsinline', '');
+    
+    video.load();
+    
+    // 3. Force Start
+    video.play().then(() => {
+        skipBtn.style.display = 'block';
+        // Wait longer for the 8-bit video to stabilize
+        setTimeout(() => {
+            if (!isMuted) {
+                video.muted = false;
+                video.volume = 1.0;
             }
-            
-            document.getElementById('winMessage').innerText = msg;
-            const video = document.getElementById('endVideo');
-            const credits = document.getElementById('creditsScreen');
-            const skipBtn = document.getElementById('skipVideo');
-            
-            video.src = videoFile;
-            video.style.display = 'block';
-            video.muted = true;
-            video.load();
-            
-            video.play().then(() => {
-                skipBtn.style.display = 'block';
-                setTimeout(() => {
-                    if (!isMuted) {
-                        video.muted = false;
-                        video.volume = 1.0;
-                    }
-                }, 500);
-            }).catch(() => transitionToCredits());
+        }, 800); 
+    }).catch((e) => {
+        console.log("Safari blocked playback", e);
+        transitionToCredits();
+    });
 
-            const transitionToCredits = () => {
-                video.pause();
-                video.src = "";
-                video.style.display = 'none';
-                skipBtn.style.display = 'none';
-                credits.style.display = 'flex';
-            };
+    const transitionToCredits = () => {
+        video.pause();
+        video.src = "";
+        video.style.display = 'none';
+        skipBtn.style.display = 'none';
+        credits.style.display = 'flex';
+        canvas.style.display = 'block'; // Bring canvas back for restart if needed
+    };
 
-            video.onended = transitionToCredits;
-            skipBtn.onclick = transitionToCredits;
-        }
+    video.onended = transitionToCredits;
+    skipBtn.onclick = transitionToCredits;
+}
+
     </script>
 </body>
 </html>
