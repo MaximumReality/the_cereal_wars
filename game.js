@@ -80,22 +80,31 @@ function update() {
         thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
     }
 
-    // Update Projectiles
+       // Update Projectiles
     for (let i = thrownPuffs.length - 1; i >= 0; i--) {
         let puff = thrownPuffs[i];
-        // Puffs fly UP if Mochkil throws, DOWN if Azul's enemy throws
-        puff.y += (playerChar === 'MOCHKIL') ? -puff.speed : puff.speed; 
         
+        // FIX: If Mochkil is the PLAYER (at bottom), fly UP (-speed). 
+        // If Mochkil is the NPC (at top), fly DOWN (+speed).
+        if (playerChar === 'MOCHKIL') {
+            puff.y -= puff.speed; // Player Mochkil shoots up
+        } else {
+            puff.y += puff.speed; // NPC Mochkil shoots down at Azul
+        }
+        
+        // Target logic
         let target = (playerChar === 'AZUL') ? player : enemy;
         if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
             puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             puff.active = false;
-            marketShare += 5; 
+            marketShare += (playerChar === 'MOCHKIL') ? 5 : -5; // NPC hits hurt Azul's share
             mentalLevel += 2;
             thrownPuffs.splice(i, 1);
         } else if (puff.y < -100 || puff.y > canvas.height + 100) {
             thrownPuffs.splice(i, 1);
         }
+    }
+
     }
 
     // Update Boxes
@@ -125,18 +134,19 @@ function update() {
         if (box.y > canvas.height) boxes.splice(i, 1);
     }
 
-    // Win/Loss Condition
+       // Win/Loss Condition
     marketShare = Math.max(0, Math.min(100, marketShare));
+    
     if (marketShare >= 100 || mentalLevel >= 200) {
         gameState = 'over';
-        if (typeof endGame === "function") {
-            endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
-        }
+        // Mochkil wins
+        window.endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
     } else if (marketShare <= 0) {
         gameState = 'over';
-        if (typeof endGame === "function") {
-            endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
-        }
+        // Azul wins
+        window.endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
+    }
+
     }
 }
 
