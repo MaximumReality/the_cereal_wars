@@ -114,11 +114,11 @@
     if (isEnding) return;
     isEnding = true;
     
-    // 1. HARD RESET AUDIO: Kill the music connection
+    // 1. COMPLETELY WIPE THE MUSIC
     if (typeof bgMusic !== 'undefined') {
         bgMusic.pause();
-        bgMusic.src = ""; 
-        bgMusic.load(); 
+        bgMusic.src = ""; // Clear the source
+        bgMusic.load();   // Force the browser to drop the audio lock
     }
     
     document.getElementById('winMessage').innerText = msg;
@@ -127,31 +127,41 @@
     const skipBtn = document.getElementById('skipVideo');
     const canvas = document.getElementById('gameCanvas');
 
+    // 2. KILL THE CANVAS
     canvas.style.display = 'none';
 
-    video.src = videoFile;
-    video.style.display = 'block';
-    video.muted = true; // MUST start muted for the browser to allow autoplay
-    video.setAttribute('playsinline', 'true');
+    // 3. HARD REFRESH THE VIDEO ELEMENT
+    video.pause();
+    video.removeAttribute('src'); // Clean start
     video.load();
     
-    video.play().then(() => {
-        skipBtn.style.display = 'block';
-        
-        // 2. The "Stability Delay"
-        // We increase this to 1000ms (1 second) to give the Mochkil video
-        // more time to buffer the audio track.
-        setTimeout(() => {
-            if (!isMuted) {
-                video.muted = false;
-                video.volume = 1.0;
-                
-                // EXTRA FORCE: Some mobile browsers need a second 'play' 
-                // call after unmuting to wake up the audio track.
-                video.play().catch(() => {}); 
-            }
-        }, 1000); 
-    }).catch(() => transitionToCredits());
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; // Start muted (Mobile requirement)
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    
+    video.load();
+    
+    // 4. THE PLAYBACK TRIGGER
+    // We use a slight delay to let the UI finish hiding the canvas
+    setTimeout(() => {
+        video.play().then(() => {
+            skipBtn.style.display = 'block';
+            
+            // 5. UNMUTE HANDSHAKE
+            setTimeout(() => {
+                if (!isMuted) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                }
+            }, 1000); 
+        }).catch((err) => {
+            console.error("Video Playback Error:", err);
+            // If it fails, just show the credits so the player isn't stuck on black
+            transitionToCredits();
+        });
+    }, 100);
 
     const transitionToCredits = () => {
         video.pause();
@@ -170,6 +180,7 @@
     video.onended = transitionToCredits;
     skipBtn.onclick = transitionToCredits;
 }
+
 // Prevent the whole page from scrolling/bouncing on touch
 document.addEventListener('touchmove', function(e) {
     e.preventDefault();
