@@ -85,54 +85,58 @@
             }
         }
 function endGame(videoFile, msg) {
+    // Only trigger if we aren't already in 'over' state
+    if (gameState === 'over') return;
     gameState = 'over';
     
-    // Update the UI
-    document.getElementById('winMessage').innerText = msg;
+    // 1. SILENCE THE THEME MUSIC
+    // This clears the "audio lane" so Safari allows the video to play with sound
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.pause();
+    }
     
+    document.getElementById('winMessage').innerText = msg;
     const video = document.getElementById('endVideo');
     const credits = document.getElementById('creditsScreen');
     const skipBtn = document.getElementById('skipVideo');
     
-    // 1. Setup the Video
+    // 2. Setup the Video
     video.src = videoFile;
     video.style.display = 'block';
-    video.muted = true; // MUST start muted for iOS autoplay
+    video.muted = true; // Still required for the initial "handshake"
     video.setAttribute('playsinline', ''); 
     video.load();
     
-    // 2. Play and then Attempt to Unmute
+    // 3. Play and Force Unmute
     video.play().then(() => {
-        // Show the escape button now that video has started
         skipBtn.style.display = 'block';
         
-        // Small delay before unmuting helps bypass Safari's block
+        // Wait a beat for the video to move, then flip the sound on
         setTimeout(() => {
             if (!isMuted) {
                 video.muted = false; 
                 video.volume = 1.0;
             }
-        }, 150);
+        }, 250); // Slightly longer delay for iPhone 14 Pro Max stability
     }).catch((error) => {
-        console.log("Video Playback Error:", error);
+        console.log("Playback Error:", error);
         transitionToCredits();
     });
 
-    // 3. Transition Logic
     const transitionToCredits = () => {
         video.pause();
         video.style.display = 'none';
         skipBtn.style.display = 'none';
         credits.style.display = 'flex';
         
-        // Resume the 'cereal_wars.mp3' loop at the credits screen if desired
+        // Optional: Bring the theme song back for the credits
         if (!isMuted) bgMusic.play().catch(() => {});
     };
 
-    // Trigger transition when video ends OR skip is clicked
     video.onended = transitionToCredits;
     skipBtn.onclick = transitionToCredits;
 }
+
 
         function triggerShake(duration) {
             const container = document.getElementById('game-container');
