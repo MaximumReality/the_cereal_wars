@@ -23,7 +23,11 @@
     <div id="game-container">
         <div id="ui">
             <div class="stat-box">MARKET<br><span id="score">50</span>%</div>
-            <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div>
+            <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div> 
+            <div class="stat-box" id="muteToggle" style="pointer-events: auto; cursor: pointer;">
+    SOUND: <span id="soundStatus">OFF</span>
+</div>
+
         </div>
         <div id="badge-container"><img src="credibility_badge.png" style="width:100%;"></div>
         <canvas id="gameCanvas"></canvas>
