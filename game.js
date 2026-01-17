@@ -12,6 +12,7 @@ let boxes = [];
 let thrownPuffs = [];
 let isMuted = true;
 let lastThrowTime = 0;
+let startTime = 0; // Track when the game actually starts
 
 let bgMusic = new Audio('cereal_wars.mp3'); 
 bgMusic.loop = true;
@@ -21,7 +22,6 @@ document.getElementById('muteToggle').addEventListener('click', (e) => {
     isMuted = !isMuted;
     document.getElementById('soundStatus').innerText = isMuted ? "OFF" : "ON";
     
-    // Check if we are in game or in the video
     if (gameState === 'playing') {
         bgMusic.muted = isMuted;
         if (!isMuted) bgMusic.play().catch(() => {});
@@ -63,6 +63,7 @@ function startGame(choice) {
     mentalLevel = 0;
     boxes = []; 
     thrownPuffs = [];
+    startTime = performance.now(); // Record start time for speed multiplier
 
     if (playerChar === 'AZUL') {
         player.y = 100;
@@ -77,7 +78,10 @@ function startGame(choice) {
 function update() {
     if (gameState !== 'playing') return;
 
-    enemy.x += 3 * enemy.dir;
+    // Difficulty increases 1% every second
+    let speedMultiplier = 1 + ((performance.now() - startTime) / 60000); 
+
+    enemy.x += (3 * speedMultiplier) * enemy.dir;
     if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
 
     // NPC firing logic
@@ -88,46 +92,48 @@ function update() {
     // Update Projectiles
     for (let i = thrownPuffs.length - 1; i >= 0; i--) {
         let puff = thrownPuffs[i];
-        puff.y -= puff.speed; // Both Mochkils throw UP at their opponent
+        puff.y -= puff.speed; 
 
         let target = (playerChar === 'AZUL') ? player : enemy;
         if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
             puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             puff.active = false;
-            marketShare += (playerChar === 'MOCHKIL') ? 5 : -5;
-            mentalLevel += 2;
+            marketShare += (playerChar === 'MOCHKIL') ? 1.5 : -1.5;
+            mentalLevel += 0.5;
             thrownPuffs.splice(i, 1);
         }
         if (puff.y < -100 || puff.y > canvas.height + 100) thrownPuffs.splice(i, 1);
     }
 
     boxes.forEach((box, index) => {
-        box.y += box.speed;
+        // Corrected movement: Only one line for Y movement
+        box.y += box.speed * speedMultiplier;
+
         if (playerChar === 'MOCHKIL' && !box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
                 box.isSabotaged = true;
-                marketShare += 2; 
-                mentalLevel += 5;
+                marketShare += 0.5; 
+                mentalLevel += 1;
             }
         }
         if (playerChar === 'AZUL' && box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
                 box.isSabotaged = false; 
-                marketShare -= 4; 
+                marketShare -= 0.8; 
                 player.state = 'PATCHING';
                 setTimeout(() => { if (gameState === 'playing') player.state = 'FLYING'; }, 300);
             }
         }
-        if (box.y > canvas.height) boxes.splice(index, 1);
+        if (box.y > canvas.height) boxes.splice(index, 1); 
     });
 
     marketShare = Math.max(0, Math.min(100, marketShare));
-    if (marketShare >= 100 || mentalLevel >= 200) {
+    if (marketShare >= 99.5 || mentalLevel >= 300) {
         gameState = 'over';
         if (typeof endGame === 'function') endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
-    } else if (marketShare <= 0) {
+    } else if (marketShare <= 0.5) {
         gameState = 'over';
         if (typeof endGame === 'function') endGame('8bit_azulo.mp4', "AZUL WINS - QUANTUM ORDER RESTORED");
     }
@@ -135,6 +141,12 @@ function update() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Speed Multiplier UI
+    let speedMult = (1 + ((performance.now() - startTime) / 60000)).toFixed(2);
+    ctx.fillStyle = "rgba(0, 242, 255, 0.5)";
+    ctx.font = "14px 'Courier New'";
+    ctx.fillText(`SPEED: x${speedMult}`, 20, 30);
 
     let azulObj = (playerChar === 'AZUL') ? player : enemy;
     let azulSprite = azulObj.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
