@@ -43,12 +43,25 @@
         </div>
         <video id="endVideo" playsinline muted></video>
     </div>
-    <script src="game.js"></script>
+        <script src="game.js"></script>
     <script>
         function initGame() {
             document.getElementById('startScreen').style.display = 'none';
-            if (typeof startGame === "function") startGame();
+            
+            // Unlock Audio Context for iOS
+            if (typeof bgMusic !== 'undefined') {
+                // This "primes" the iPhone speakers so sound works later
+                bgMusic.play().then(() => {
+                    if (isMuted) bgMusic.pause();
+                }).catch(e => console.log("Audio waiting for toggle"));
+            }
+
+            if (typeof startGame === "function") {
+                startGame(); // Starts the logic in your game.js
+            }
         }
+
+        // Hook for the "Mental" shake effect
         function triggerShake(duration) {
             const container = document.getElementById('game-container');
             container.classList.add('shake');
