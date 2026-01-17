@@ -77,17 +77,20 @@
         
         <canvas id="gameCanvas"></canvas>
 
-        <div id="startScreen" class="overlay">
-            <img src="azulos_corrupted.png" style="width: 120px; margin-bottom: 20px; border-radius: 15px;">
-            <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
-            
-            <div style="display:flex; flex-direction:column; gap: 20px;">
-                <button id="playMochkil">PLAY MOCHKIL</button>
-                <button id="playAzul" style="background:var(--quantum-blue);">PLAY AZUL</button>
-            </div>
-            <p style="color:gray; font-size:10px; margin-top:20px;">v2.1 - Audio Fix</p>
-        </div>
+        15px;">
+    <h1 style="color:var(--neon-orange); text-align:center; margin-bottom: 10px;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
+    
+    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: white; border: 1px solid var(--neon-orange); width: 80%; text-align: center;">
+        <p style="margin: 0 0 10px 0;"><strong style="color:var(--neon-orange)">MOCHKIL:</strong> TAP to shoot Azul-O's at the boxes!</p>
+        <p style="margin: 0;"><strong style="color:var(--quantum-blue)">AZUL:</strong> TAP boxes to fix the stickers!</p>
+    </div>
 
+    <div style="display:flex; flex-direction:column; gap: 15px;">
+        <button id="playMochkil">PLAY MOCHKIL</button>
+        <button id="playAzul" style="background:var(--quantum-blue);">PLAY AZUL</button>
+    </div>
+    <p style="color:gray; font-size:10px; margin-top:15px;">v2.2 - Instructions Added</p>
+</div>
         <div id="creditsScreen" class="overlay" style="display:none;">
             <h2 id="winMessage" style="color:var(--neon-orange);">MISSION ACCOMPLISHED</h2>
             <button onclick="window.location.reload()">PLAY AGAIN</button>
