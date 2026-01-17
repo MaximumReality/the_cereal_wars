@@ -58,58 +58,66 @@
         }
 
         function endGame(videoFile, msg) {
-            if (isEnding) return;
-            isEnding = true;
-            
-            // 1. HARD RESET AUDIO: Kill the music connection
-            if (typeof bgMusic !== 'undefined') {
-                bgMusic.pause();
-                bgMusic.src = ""; 
-                bgMusic.load(); 
+    if (isEnding) return;
+    isEnding = true;
+    
+    // 1. HARD RESET AUDIO: Kill the music connection
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.pause();
+        bgMusic.src = ""; 
+        bgMusic.load(); 
+    }
+    
+    document.getElementById('winMessage').innerText = msg;
+    const video = document.getElementById('endVideo');
+    const credits = document.getElementById('creditsScreen');
+    const skipBtn = document.getElementById('skipVideo');
+    const canvas = document.getElementById('gameCanvas');
+
+    canvas.style.display = 'none';
+
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; // MUST start muted for the browser to allow autoplay
+    video.setAttribute('playsinline', 'true');
+    video.load();
+    
+    video.play().then(() => {
+        skipBtn.style.display = 'block';
+        
+        // 2. The "Stability Delay"
+        // We increase this to 1000ms (1 second) to give the Mochkil video
+        // more time to buffer the audio track.
+        setTimeout(() => {
+            if (!isMuted) {
+                video.muted = false;
+                video.volume = 1.0;
+                
+                // EXTRA FORCE: Some mobile browsers need a second 'play' 
+                // call after unmuting to wake up the audio track.
+                video.play().catch(() => {}); 
             }
-            
-            document.getElementById('winMessage').innerText = msg;
-            const video = document.getElementById('endVideo');
-            const credits = document.getElementById('creditsScreen');
-            const skipBtn = document.getElementById('skipVideo');
-            const canvas = document.getElementById('gameCanvas');
+        }, 1000); 
+    }).catch(() => transitionToCredits());
 
-            // 2. Hide Canvas to save GPU resources
-            canvas.style.display = 'none';
-
-            video.src = videoFile;
-            video.style.display = 'block';
-            video.muted = true; // Still required to start playback on iOS
-            video.load();
-            
-            video.play().then(() => {
-                skipBtn.style.display = 'block';
-                // 3. The "Unmute Delay" - wait for video to be stable
-                setTimeout(() => {
-                    if (!isMuted) {
-                        video.muted = false;
-                        video.volume = 1.0;
-                    }
-                }, 800);
-            }).catch(() => transitionToCredits());
-
-            const transitionToCredits = () => {
-                video.pause();
-                video.src = "";
-                video.style.display = 'none';
-                skipBtn.style.display = 'none';
-                credits.style.display = 'flex';
-                // Restart music for credits if needed
-                if (!isMuted) {
-                    bgMusic.src = "cereal_wars.mp3";
-                    bgMusic.load();
-                    bgMusic.play().catch(() => {});
-                }
-            };
-
-            video.onended = transitionToCredits;
-            skipBtn.onclick = transitionToCredits;
+    const transitionToCredits = () => {
+        video.pause();
+        video.src = "";
+        video.style.display = 'none';
+        skipBtn.style.display = 'none';
+        credits.style.display = 'flex';
+        
+        if (!isMuted) {
+            bgMusic.src = "cereal_wars.mp3";
+            bgMusic.load();
+            bgMusic.play().catch(() => {});
         }
+    };
+
+    video.onended = transitionToCredits;
+    skipBtn.onclick = transitionToCredits;
+}
+
     </script>
 </body>
 </html>
