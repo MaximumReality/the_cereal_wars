@@ -20,9 +20,19 @@ document.getElementById('muteToggle').addEventListener('click', (e) => {
     e.stopPropagation(); 
     isMuted = !isMuted;
     document.getElementById('soundStatus').innerText = isMuted ? "OFF" : "ON";
-    bgMusic.muted = isMuted;
-    if (!isMuted) bgMusic.play().catch(() => {});
+    
+    // If the game is still playing, control the music
+    if (gameState === 'playing') {
+        bgMusic.muted = isMuted;
+        if (!isMuted) bgMusic.play().catch(() => {});
+    } 
+    // If the video is playing, control the video instead
+    else if (gameState === 'over') {
+        const video = document.getElementById('endVideo');
+        if (video) video.muted = isMuted;
+    }
 });
+
 
 const assets = {
     mochkil: new Image(), 
