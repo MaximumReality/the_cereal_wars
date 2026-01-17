@@ -123,14 +123,31 @@ function endGame(videoFile) {
     const video = document.getElementById('endVideo');
     const credits = document.getElementById('creditsScreen');
     
+    gameState = 'over'; // Ensure physics are stopped
+    
     video.src = videoFile;
     video.style.display = 'block';
+    
+    // REQUIRED FOR IPHONE CHROME/SAFARI:
+    video.muted = true;       // Allows the video to bypass autoplay blocks
+    video.autoplay = true;    // Tells the browser to start immediately
+    video.setAttribute('playsinline', ''); // Ensures it doesn't open in a separate player
+    
     video.load(); 
     
-    video.play().catch(e => {
-        video.style.display = 'none';
-        credits.style.display = 'flex';
-    });
+    // Try to play
+    let playPromise = video.play();
+
+    if (playPromise !== undefined) {
+        playPromise.then(_ => {
+            // Video started! You can try to unmute here if you want sound:
+            // video.muted = false; 
+        }).catch(error => {
+            console.log("Video blocked by browser policy, skipping to credits.");
+            video.style.display = 'none';
+            credits.style.display = 'flex';
+        });
+    }
     
     video.onended = () => {
         video.style.display = 'none';
