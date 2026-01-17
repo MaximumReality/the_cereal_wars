@@ -157,6 +157,12 @@
             video.onended = transitionToCredits;
             skipBtn.onclick = transitionToCredits;
         }
+        if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+    .then(() => console.log("PWA: Ready for offline use"))
+    .catch((err) => console.log("PWA error:", err));
+}
+
     </script>
 </body>
 </html>
