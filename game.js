@@ -57,12 +57,13 @@ function startGame(choice) {
     boxes = []; 
     thrownPuffs = [];
 
+    // Set starting positions based on who you chose
     if (playerChar === 'AZUL') {
-        player.y = 100;
-        enemy.y = 750;
+        player.y = 100; // Azul starts at top
+        enemy.y = 750;  // NPC Mochkil starts at bottom
     } else {
-        player.y = 750;
-        enemy.y = 100;
+        player.y = 750; // Mochkil starts at bottom
+        enemy.y = 100;  // NPC Azul starts at top
     }
     requestAnimationFrame(gameLoop);
 }
@@ -73,9 +74,8 @@ function update() {
     enemy.x += 3 * enemy.dir;
     if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
 
-    // NPC firing logic
+    // NPC firing logic: NPC Mochkil is at the bottom when player is Azul
     if (playerChar === 'AZUL' && Math.random() > 0.97) {
-        // NPC Mochkil (at bottom) throws UP at Azul
         thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
     }
 
@@ -83,21 +83,23 @@ function update() {
     for (let i = thrownPuffs.length - 1; i >= 0; i--) {
         let puff = thrownPuffs[i];
         
-        // Direction logic: Puffs go UP if thrown from bottom, DOWN if thrown from top
-        if (playerChar === 'MOCHKIL') {
-            puff.y -= puff.speed; // Player Mochkil shoots up
-        } else {
-            puff.y += puff.speed; // NPC Mochkil shoots down at Azul
-        }
+        // DIRECTION FIX:
+        // If Player is Mochkil, he is at bottom, he throws UP (-speed).
+        // If Player is Azul, NPC Mochkil is at bottom, he throws UP (-speed).
+        // BOTH Mochkils throw UP at their opponent.
+        puff.y -= puff.speed; 
 
         let target = (playerChar === 'AZUL') ? player : enemy;
         if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
             puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
             puff.active = false;
+            
+            // If Azul gets hit by NPC Mochkil puffs, his share drops
             marketShare += (playerChar === 'MOCHKIL') ? 5 : -5;
             mentalLevel += 2;
             thrownPuffs.splice(i, 1);
         }
+        
         if (puff.y < -100 || puff.y > canvas.height + 100) thrownPuffs.splice(i, 1);
     }
 
@@ -117,7 +119,7 @@ function update() {
                 box.isSabotaged = false; 
                 marketShare -= 4; 
                 player.state = 'PATCHING';
-                setTimeout(() => player.state = 'FLYING', 300);
+                setTimeout(() => { if (gameState === 'playing') player.state = 'FLYING'; }, 300);
             }
         }
         if (box.y > canvas.height) boxes.splice(index, 1);
