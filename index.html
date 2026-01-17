@@ -51,6 +51,8 @@
         </div>
 
         <video id="endVideo" playsinline muted></video>
+        <button id="skipVideo" style="display:none; position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:200; font-size:14px; padding:10px 20px;">SKIP TO CREDITS</button>
+
     </div>
 
     <script src="game.js"></script>
@@ -69,6 +71,55 @@
                 startGame(choice);
             }
         }
+function endGame(videoFile, msg) {
+    gameState = 'over';
+    
+    // Update the UI
+    document.getElementById('winMessage').innerText = msg;
+    
+    const video = document.getElementById('endVideo');
+    const credits = document.getElementById('creditsScreen');
+    const skipBtn = document.getElementById('skipVideo');
+    
+    // 1. Setup the Video
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; // MUST start muted for iOS autoplay
+    video.setAttribute('playsinline', ''); 
+    video.load();
+    
+    // 2. Play and then Attempt to Unmute
+    video.play().then(() => {
+        // Show the escape button now that video has started
+        skipBtn.style.display = 'block';
+        
+        // Small delay before unmuting helps bypass Safari's block
+        setTimeout(() => {
+            if (!isMuted) {
+                video.muted = false; 
+                video.volume = 1.0;
+            }
+        }, 150);
+    }).catch((error) => {
+        console.log("Video Playback Error:", error);
+        transitionToCredits();
+    });
+
+    // 3. Transition Logic
+    const transitionToCredits = () => {
+        video.pause();
+        video.style.display = 'none';
+        skipBtn.style.display = 'none';
+        credits.style.display = 'flex';
+        
+        // Resume the 'cereal_wars.mp3' loop at the credits screen if desired
+        if (!isMuted) bgMusic.play().catch(() => {});
+    };
+
+    // Trigger transition when video ends OR skip is clicked
+    video.onended = transitionToCredits;
+    skipBtn.onclick = transitionToCredits;
+}
 
         function triggerShake(duration) {
             const container = document.getElementById('game-container');
