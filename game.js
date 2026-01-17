@@ -1,27 +1,33 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Set resolution for iPhone 14 Pro Max
 canvas.width = 430;
 canvas.height = 932;
 
+// --- Game State ---
 let gameState = 'waiting';
 let marketShare = 50; 
 let mentalLevel = 0;
 let boxes = [];
-let thrownPuffs = []; // Mochkil's projectiles
+let thrownPuffs = [];
 let isMuted = true;
-let bgMusic = new Audio('cereal_war_theme.mp3'); // Ensure file exists
+let lastThrowTime = 0;
+
+// --- Audio Setup ---
+let bgMusic = new Audio('cereal_war_theme.mp3'); 
 bgMusic.loop = true;
 
 // Mute Toggle Logic
 document.getElementById('muteToggle').addEventListener('click', (e) => {
-    e.stopPropagation(); // Prevents throwing a box when clicking the button
+    e.stopPropagation(); 
     isMuted = !isMuted;
     document.getElementById('soundStatus').innerText = isMuted ? "OFF" : "ON";
     bgMusic.muted = isMuted;
     if (!isMuted) bgMusic.play().catch(() => {});
 });
 
+// --- Asset Registry ---
 const assets = {
     mochkil: new Image(),
     beanie: new Image(),
@@ -29,8 +35,8 @@ const assets = {
     badge: new Image(),
     flyAzulo: new Image(),
     holdingAzulo: new Image(),
-    boxNormal: new Image(),     // Azulo's Box
-    boxCorrupted: new Image()    // Mochkil's Puff Box
+    boxNormal: new Image(),     
+    boxCorrupted: new Image()    
 };
 
 assets.mochkil.src = 'thief_no_cereal.png';
@@ -42,9 +48,11 @@ assets.holdingAzulo.src = 'holding_azulos.png';
 assets.boxNormal.src = 'azulos_special.png';
 assets.boxCorrupted.src = 'azulos_corrupted.png';
 
+// --- Entities ---
 const player = { x: 175, y: 750, width: 80, height: 100 };
 const azul = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 };
 
+// --- Core Functions ---
 function startGame() {
     gameState = 'playing';
     marketShare = 50;
@@ -54,38 +62,21 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
-// Throwing Mechanic: Tap to launch
-canvas.addEventListener('touchstart', (e) => {
-    if (gameState !== 'playing') return;
-    
-    // Launch a Puff Box upward
-    thrownPuffs.push({
-        x: player.x + 10,
-        y: player.y,
-        width: 60,
-        height: 80,
-        speed: 10,
-        active: true
-    });
-}, { passive: false });
-
 function update() {
     if (gameState !== 'playing') return;
 
-    // 1. Azul Movement (Side to side at top)
+    // 1. Azul AI: Horizontal movement
     azul.x += 2 * azul.dir;
     if (azul.x > canvas.width - azul.width || azul.x < 0) azul.dir *= -1;
 
-    // 2. Update Thrown Puffs (Mochkil's Attack)
+    // 2. Update Thrown Puffs (Mochkil Attacks Azul)
     thrownPuffs.forEach((puff, pIndex) => {
         puff.y -= puff.speed;
-        
-        // Check if Puff hits Azul
         if (puff.x < azul.x + azul.width && puff.x + puff.width > azul.x &&
             puff.y < azul.y + azul.height && puff.y + puff.height > azul.y && puff.active) {
             
             puff.active = false;
-            marketShare += 5; // Direct Hit!
+            marketShare += 5; 
             mentalLevel += 2;
             azul.state = 'PATCHING';
             setTimeout(() => azul.state = 'FLYING', 500);
@@ -109,7 +100,7 @@ function update() {
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
-    // Win/Loss
+    // 4. Win/Loss Logic
     marketShare = Math.max(0, Math.min(100, marketShare));
     mentalLevel = Math.min(200, mentalLevel);
 
@@ -123,26 +114,27 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Azul
+    // Draw Azul
     let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
-    // Thrown Puffs
+    // Draw Thrown Puffs
     thrownPuffs.forEach(puff => {
         ctx.drawImage(assets.boxCorrupted, puff.x, puff.y, puff.width, puff.height);
     });
 
-    // Falling Boxes
+    // Draw Falling Boxes
     boxes.forEach(box => {
         let sprite = box.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
         ctx.drawImage(sprite, box.x, box.y, box.width, box.height);
     });
     
-    // Mochkil & Hat
+    // Draw Mochkil & Hat
     ctx.drawImage(assets.mochkil, player.x, player.y, player.width, player.height);
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
     ctx.drawImage(hat, player.x + 10, player.y - 30, 60, 50);
 
+    // Update UI
     document.getElementById('score').innerText = Math.floor(marketShare);
     document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
@@ -154,7 +146,7 @@ function endGame(videoFile) {
     
     video.src = videoFile;
     video.style.display = 'block';
-    video.muted = isMuted; // Sync with your toggle
+    video.muted = isMuted; 
     video.setAttribute('playsinline', ''); 
     video.load();
     
@@ -169,7 +161,9 @@ function endGame(videoFile) {
     };
 }
 
-// Logic for side-to-side movement
+// --- Controls ---
+
+// Move: Drag side to side
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     let touch = e.touches[0];
@@ -178,6 +172,25 @@ canvas.addEventListener('touchmove', (e) => {
     player.x = Math.max(0, Math.min(canvas.width - player.width, newX));
 }, { passive: false });
 
+// Attack: Tap to throw
+canvas.addEventListener('touchstart', (e) => {
+    if (gameState !== 'playing') return;
+    const now = Date.now();
+    if (now - lastThrowTime > 300) { 
+        thrownPuffs.push({
+            x: player.x + 10,
+            y: player.y,
+            width: 60,
+            height: 80,
+            speed: 12,
+            active: true
+        });
+        lastThrowTime = now;
+        if (window.navigator.vibrate) window.navigator.vibrate(15);
+    }
+}, { passive: false });
+
+// --- Game Loop & Spawning ---
 function gameLoop() {
     if (gameState === 'playing') {
         update();
@@ -186,7 +199,6 @@ function gameLoop() {
     }
 }
 
-// Spawner for random falling boxes
 setInterval(() => {
     if (gameState === 'playing') {
         boxes.push({
