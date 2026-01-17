@@ -104,7 +104,12 @@ function update() {
     if (marketShare >= 100) endGame('puffs_commercial.mp4');
     if (marketShare <= 0) endGame('8bit_azulo.mp4');
 }
-
+// Mental overload ending (prevents freeze)
+if (mentalLevel >= 200) {
+    mentalLevel = 200;
+    endGame('puffs_commercial.mp4'); // or a custom mental ending
+    return;
+}
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
