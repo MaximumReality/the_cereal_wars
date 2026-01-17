@@ -101,7 +101,7 @@ function update() {
     }
 
     // 3. Victory/Defeat Checks
-    if (marketShare >= 100) endGame('puffs_commercial.mp4');
+    if (marketShare >= 100) endGame('puffs_commercial.MP4');
     if (marketShare <= 0) endGame('8bit_azulo.mp4');
 }
 // Mental overload ending (prevents freeze)
