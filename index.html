@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mochkil Puffs: Corporate Sabotage</title>
+    <style>
+        :root {
+            --neon-orange: #ff9900;
+            --quantum-purple: #b026ff;
+        }
+        body { 
+            margin: 0; 
+            background-color: #000; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        /* The Arcade Cabinet Look */
+        #game-container {
+            position: relative;
+            border: 5px solid var(--neon-orange);
+            box-shadow: 0 0 20px var(--neon-orange);
+            width: 90vw;
+            height: 80vh;
+            max-width: 430px; /* iPhone 14 Pro Max width approx */
+            background: #111;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            /* Keep our yarn sprites crisp */
+            image-rendering: pixelated;
+        }
+        /* UI Overlay */
+        #ui {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            color: #fff;
+            text-shadow: 2px 2px #000;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .mental-meter {
+            color: var(--neon-orange);
+            font-weight: bold;
+        }
+        /* The "Shake" Effect for when Mochkil goes mental */
+        .shake {
+            animation: shake 0.2s infinite;
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            40% { transform: translate(3px, 2px) rotate(-1deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="ui">
+            <div>MARKET SHARE: <span id="score">0</span>%</div>
+            <div class="mental-meter">MENTAL: <span id="rage">0</span>%</div>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        // Quick Script to handle the "Mental" Shake
+        const container = document.getElementById('game-container');
+        function goMental() {
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), 1000);
+        }
+        // Call goMental() in your JS whenever Mochkil eats a puff!
+    </script>
+</body>
+</html>
