@@ -1,4 +1,4 @@
-# Mochkil Puffs: Sabotage
+# Mochkil Puffs: Sabotage 🥣🐈‍⬛
 
 ## Overview
 A short, free PWA game for iPhone/Android. Choose MOCHKIL or AZUL, collect or sabotage cereal boxes, and enjoy mini gameplay bursts on the go!
