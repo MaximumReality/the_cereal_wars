@@ -6,75 +6,36 @@
     <title>Mochkil Puffs: Corporate Sabotage</title>
     <style>
         :root { --neon-orange: #ff9900; --quantum-blue: #00f2ff; }
-        
         * { box-sizing: border-box; touch-action: none; }
 
         body { 
-            margin: 0; padding: 0; 
-            background-color: #000; 
+            margin: 0; padding: 0; background-color: #000; 
             display: flex; justify-content: center; align-items: center; 
-            height: 100svh; width: 100vw; 
-            overflow: hidden; position: fixed;
+            height: 100svh; width: 100vw; overflow: hidden; position: fixed;
             font-family: 'Courier New', monospace; 
         }
 
         #game-container { 
-            position: relative; 
-            width: 100%; height: 100%; 
+            position: relative; width: 100%; height: 100%; 
             max-width: 430px; max-height: 932px; 
-            background: #111; overflow: hidden; 
+            /* BACKGROUND IMAGE INTEGRATION */
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('aisle.jpg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden; 
         }
 
-        canvas { display: block; width: 100%; height: 100%; z-index: 1; }
+        /* Canvas must be transparent to see the aisle.jpg */
+        canvas { display: block; width: 100%; height: 100%; z-index: 1; background: transparent; }
 
-        /* LAYER 200: UI and Stats */
-        #ui { 
-            position: absolute; 
-            top: env(safe-area-inset-top, 40px); 
-            width: 100%; display: flex; justify-content: space-around; 
-            pointer-events: none; z-index: 200; 
-        }
-        .stat-box { 
-            background: rgba(0, 0, 0, 0.8); padding: 8px; 
-            border: 1px solid var(--neon-orange); color: #fff; 
-            text-align: center; min-width: 80px; font-size: 12px;
-        }
-
-        /* LAYER 10: The Badge (Moved to corner, fixed size) */
-        #badge-container { 
-            position: absolute; 
-            bottom: 20px; right: 20px; 
-            width: 60px; height: auto;
-            z-index: 10; opacity: 0.8; 
-            pointer-events: none;
-        }
+        #ui { position: absolute; top: env(safe-area-inset-top, 40px); width: 100%; display: flex; justify-content: space-around; pointer-events: none; z-index: 200; }
+        .stat-box { background: rgba(0, 0, 0, 0.8); padding: 8px; border: 1px solid var(--neon-orange); color: #fff; text-align: center; min-width: 80px; font-size: 12px; }
+        #badge-container { position: absolute; bottom: 20px; right: 20px; width: 60px; height: auto; z-index: 10; opacity: 0.8; pointer-events: none; }
         #badge-container img { width: 100%; height: auto; }
-
-        /* LAYER 300+: Overlays and Videos */
-        .overlay { 
-            position: absolute; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 400; background: rgba(0,0,0,0.9); 
-        }
-        
-        video { 
-            position: absolute; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            object-fit: cover; z-index: 500; display: none; 
-        }
-
-        button { 
-            padding: 15px 30px; font-size: 18px; 
-            background: var(--neon-orange); color: #000; 
-            border: none; font-weight: bold; cursor: pointer; 
-            pointer-events: auto;
-        }
-
-        #skipVideo { 
-            z-index: 600; position: absolute; bottom: 50px; 
-            left: 50%; transform: translateX(-50%); 
-        }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 400; background: rgba(0,0,0,0.9); }
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 500; display: none; }
+        button { padding: 15px 30px; font-size: 18px; background: var(--neon-orange); color: #000; border: none; font-weight: bold; cursor: pointer; pointer-events: auto; }
+        #skipVideo { z-index: 600; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); }
     </style>  
 </head>
 <body>
@@ -82,17 +43,10 @@
         <div id="ui">
             <div class="stat-box">MARKET<br><span id="score">50</span>%</div>
             <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div> 
-            <div class="stat-box" id="muteToggle" style="pointer-events: auto; cursor: pointer;">
-                SOUND: <span id="soundStatus">OFF</span>
-            </div>
+            <div class="stat-box" id="muteToggle" style="pointer-events: auto; cursor: pointer;">SOUND: <span id="soundStatus">OFF</span></div>
         </div>
-
-        <div id="badge-container">
-            <img src="credibility_badge.png" alt="Badge">
-        </div>
-
+        <div id="badge-container"><img src="credibility_badge.png" alt="Badge"></div>
         <canvas id="gameCanvas"></canvas>
-
         <div id="startScreen" class="overlay">
             <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
             <div style="display:flex; flex-direction:column; gap: 15px;">
@@ -100,23 +54,17 @@
                 <button onclick="initGame('AZUL')" style="background:var(--quantum-blue);">PLAY AZUL</button>
             </div>
         </div>
-
         <div id="creditsScreen" class="overlay" style="display:none;">
             <h2 id="winMessage" style="color:var(--neon-orange);">MISSION ACCOMPLISHED</h2>
             <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
-
         <video id="endVideo" playsinline webkit-playsinline></video>
         <button id="skipVideo" style="display:none;">SKIP VIDEO</button>
     </div>
-
     <script src="game.js"></script>
     <script>
         let isEnding = false;
-
-        // Prevent browser bounce/scroll
         document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-
         function initGame(choice) {
             document.getElementById('startScreen').style.display = 'none';
             if (typeof bgMusic !== 'undefined') {
@@ -126,69 +74,35 @@
         }
 
         function endGame(videoFile, msg) {
-    if (isEnding) return;
-    isEnding = true;
-    
-    // 1. THE TRIPLE-KILL: Completely destroy the music object
-    if (typeof bgMusic !== 'undefined') {
-        bgMusic.pause();
-        bgMusic.muted = true;
-        bgMusic.src = ""; // Empty the source
-        bgMusic.load();   // Force the buffer to clear
-        // Don't restart it until the credits!
-    }
-    
-    document.getElementById('winMessage').innerText = msg;
-    const video = document.getElementById('endVideo');
-    const credits = document.getElementById('creditsScreen');
-    const skipBtn = document.getElementById('skipVideo');
-    const canvas = document.getElementById('gameCanvas');
-
-    canvas.style.display = 'none';
-
-    // 2. Prepare the video - use the lowercase .mp4 for Azul
-    video.src = videoFile;
-    video.style.display = 'block';
-    video.muted = true; // Start muted to bypass the iOS "Auto-Pause"
-    video.load();
-    
-    // 3. The "Heavy Handshake": Wait 300ms for the audio hardware to settle
-    setTimeout(() => {
-        video.play().then(() => {
-            skipBtn.style.display = 'block';
-            
-            // 4. Gradual Unmute: Wait for the eyes to move past the first second
+            if (isEnding) return;
+            isEnding = true;
+            if (typeof bgMusic !== 'undefined') {
+                bgMusic.pause(); bgMusic.muted = true; bgMusic.src = ""; bgMusic.load();
+            }
+            document.getElementById('winMessage').innerText = msg;
+            const video = document.getElementById('endVideo');
+            const skipBtn = document.getElementById('skipVideo');
+            const canvas = document.getElementById('gameCanvas');
+            canvas.style.display = 'none';
+            video.src = videoFile;
+            video.style.display = 'block';
+            video.muted = true;
+            video.load();
             setTimeout(() => {
-                if (!isMuted) {
-                    video.muted = false;
-                    video.volume = 1.0;
-                }
-            }, 1200); 
-        }).catch((err) => {
-            console.log("Playback failed, skipping to credits", err);
-            transitionToCredits();
-        });
-    }, 300);
-
-    const transitionToCredits = () => {
-        video.pause();
-        video.src = "";
-        video.style.display = 'none';
-        skipBtn.style.display = 'none';
-        credits.style.display = 'flex';
-        
-        // Only bring music back once video is totally gone
-        if (!isMuted) {
-            bgMusic.src = "cereal_wars.mp3";
-            bgMusic.load();
-            bgMusic.play().catch(() => {});
+                video.play().then(() => {
+                    skipBtn.style.display = 'block';
+                    setTimeout(() => { if (!isMuted) { video.muted = false; video.volume = 1.0; } }, 1200);
+                }).catch(() => transitionToCredits());
+            }, 300);
+            const transitionToCredits = () => {
+                video.pause(); video.src = ""; video.style.display = 'none';
+                skipBtn.style.display = 'none';
+                document.getElementById('creditsScreen').style.display = 'flex';
+                if (!isMuted) { bgMusic.src = "cereal_wars.mp3"; bgMusic.load(); bgMusic.play().catch(() => {}); }
+            };
+            video.onended = transitionToCredits;
+            skipBtn.onclick = transitionToCredits;
         }
-    };
-
-    video.onended = transitionToCredits;
-    skipBtn.onclick = transitionToCredits;
-}
-
     </script>
 </body>
 </html>
