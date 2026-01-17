@@ -3,40 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mochkil Puffs: Corporate Sabotage</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>Mochkil Puffs: Sabotage</title>
+
     <style>
         :root { --neon-orange: #ff9900; --quantum-blue: #00f2ff; }
-        * { box-sizing: border-box; touch-action: none; }
+        * { box-sizing: border-box; touch-action: none; -webkit-tap-highlight-color: transparent; }
 
-        body { 
+        html, body { 
             margin: 0; padding: 0; background-color: #000; 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100svh; width: 100vw; overflow: hidden; position: fixed;
+            width: 100vw; height: 100%; 
+            overflow: hidden; position: fixed;
             font-family: 'Courier New', monospace; 
         }
 
         #game-container { 
             position: relative; width: 100%; height: 100%; 
-            max-width: 430px; max-height: 932px; 
+            max-width: 430px; margin: 0 auto;
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('aisle.jpg');
-            background-size: cover;
-            background-position: center;
+            background-size: cover; background-position: center;
             overflow: hidden; 
         }
 
         canvas { display: block; width: 100%; height: 100%; z-index: 1; background: transparent; }
 
-        #ui { position: absolute; top: env(safe-area-inset-top, 40px); width: 100%; display: flex; justify-content: space-around; pointer-events: none; z-index: 200; }
-        .stat-box { background: rgba(0, 0, 0, 0.8); padding: 8px; border: 1px solid var(--neon-orange); color: #fff; text-align: center; min-width: 80px; font-size: 12px; }
-        #badge-container { position: absolute; bottom: 20px; right: 20px; width: 60px; height: auto; z-index: 10; opacity: 0.8; pointer-events: none; }
+        /* FIXED UI POSITIONING FOR CHROME */
+        #ui { 
+            position: absolute; 
+            top: max(20px, env(safe-area-inset-top)); 
+            width: 100%; display: flex; justify-content: space-around; 
+            pointer-events: none; z-index: 200; 
+        }
+        
+        .stat-box { 
+            background: rgba(0, 0, 0, 0.8); padding: 8px; border: 1px solid var(--neon-orange); 
+            color: #fff; text-align: center; min-width: 85px; font-size: 11px; pointer-events: auto;
+        }
+
+        #badge-container { position: absolute; bottom: 40px; right: 20px; width: 60px; z-index: 10; opacity: 0.8; }
         #badge-container img { width: 100%; height: auto; }
-        
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 400; background: rgba(0,0,0,0.9); }
-        
         video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 500; display: none; background: #000; }
-        
-        button { padding: 15px 30px; font-size: 18px; background: var(--neon-orange); color: #000; border: none; font-weight: bold; cursor: pointer; pointer-events: auto; }
-        #skipVideo { z-index: 600; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); }
+        button { padding: 18px 35px; font-size: 18px; background: var(--neon-orange); color: #000; border: none; font-weight: bold; cursor: pointer; pointer-events: auto; border-radius: 4px; }
+        #skipVideo { z-index: 600; position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); }
     </style>  
 </head>
 <body>
@@ -44,19 +56,18 @@
         <div id="ui">
             <div class="stat-box">MARKET<br><span id="score">50</span>%</div>
             <div class="stat-box" style="color:var(--neon-orange)">MENTAL<br><span id="rage">0</span>%</div> 
-            <div class="stat-box" id="muteToggle" style="pointer-events: auto; cursor: pointer;">SOUND: <span id="soundStatus">OFF</span></div>
+            <div class="stat-box" id="muteToggle">SOUND: <span id="soundStatus">OFF</span></div>
         </div>
-        
         <div id="badge-container"><img src="credibility_badge.png" alt="Badge"></div>
-        
         <canvas id="gameCanvas"></canvas>
 
         <div id="startScreen" class="overlay">
             <h1 style="color:var(--neon-orange); text-align:center;">MOCHKIL PUFFS:<br>SABOTAGE</h1>
-            <div style="display:flex; flex-direction:column; gap: 15px;">
+            <div style="display:flex; flex-direction:column; gap: 20px;">
                 <button onclick="initGame('MOCHKIL')">PLAY MOCHKIL</button>
                 <button onclick="initGame('AZUL')" style="background:var(--quantum-blue);">PLAY AZUL</button>
             </div>
+            <p style="color:white; font-size:10px; margin-top:20px;">ADD TO HOME SCREEN FOR FULL EXPERIENCE</p>
         </div>
 
         <div id="creditsScreen" class="overlay" style="display:none;">
@@ -72,17 +83,23 @@
     <script>
         let isEnding = false;
 
-        // Prevent iPhone bounce/scroll
-        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        function toggleFullScreen() {
+            let doc = window.document;
+            let docEl = doc.documentElement;
+            let requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                requestFullScreen.call(docEl).catch(()=>{});
+            }
+        }
 
         function initGame(choice) {
+            // Trigger Fullscreen on touch
+            toggleFullScreen();
+            
             document.getElementById('startScreen').style.display = 'none';
             if (typeof bgMusic !== 'undefined') {
-                // FIX: Set mute state before playing to prevent the 'blip'
                 bgMusic.muted = isMuted;
-                if (!isMuted) {
-                    bgMusic.play().catch(() => {});
-                }
+                if (!isMuted) bgMusic.play().catch(() => {});
             }
             if (typeof startGame === "function") startGame(choice);
         }
@@ -90,11 +107,8 @@
         function endGame(videoFile, msg) {
             if (isEnding) return;
             isEnding = true;
-            
-            // 1. Force the game state to stop in game.js
             if (typeof gameState !== 'undefined') gameState = 'over';
             
-            // 2. Clear background music immediately
             if (typeof bgMusic !== 'undefined') {
                 bgMusic.pause();
                 bgMusic.currentTime = 0;
@@ -106,60 +120,43 @@
             const canvas = document.getElementById('gameCanvas');
             const container = document.getElementById('game-container');
 
-            // 3. iPhone Resource Cleanup: Kill the wallpaper and UI
             container.style.backgroundImage = 'none'; 
             container.style.backgroundColor = '#000';
             canvas.style.display = 'none';
             document.getElementById('ui').style.display = 'none';
             document.getElementById('badge-container').style.display = 'none';
-
             document.getElementById('winMessage').innerText = msg;
 
-            // 4. Video Handshake
             video.src = videoFile;
             video.style.display = 'block';
-            video.muted = true; // Always start muted for iOS compliance
+            video.muted = true;
             video.load();
             
-            // Give the iPhone 14 Pro Max 800ms to dump game memory
             setTimeout(() => {
                 video.play().then(() => {
                     skipBtn.style.display = 'block';
-                    
-                    // 5. Safe Unmute (1.5s delay to avoid crash during initial buffering)
                     setTimeout(() => {
-                        if (!isMuted && !video.paused) {
-                            video.muted = false;
-                        }
+                        if (!isMuted && !video.paused) video.muted = false;
                     }, 1500); 
                 }).catch(() => transitionToCredits());
             }, 800);
 
             const transitionToCredits = () => {
-                video.pause();
-                video.src = "";
+                video.pause(); video.src = "";
                 video.style.display = 'none';
                 skipBtn.style.display = 'none';
-                
-                // Restore Wallpaper for Credits Screen
                 container.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('aisle.jpg')";
                 document.getElementById('ui').style.display = 'flex';
                 document.getElementById('creditsScreen').style.display = 'flex';
-                
-                // Restart music ONLY if not muted
                 if (!isMuted) {
                     bgMusic.src = "cereal_wars.mp3";
                     bgMusic.load();
                     bgMusic.play().catch(() => {});
                 }
             };
-
             video.onended = transitionToCredits;
             skipBtn.onclick = transitionToCredits;
         }
-
-        // Logic to trigger the endGame from game.js
-        // Ensure game.js win conditions use: endGame('8bit_azulo.MP4', "AZUL WINS");
     </script>
 </body>
 </html>
