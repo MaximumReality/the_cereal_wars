@@ -112,12 +112,24 @@ function draw() {
     let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
-    // Draw Boxes
     boxes.forEach(box => {
-        let boxSprite = box.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
-        ctx.drawImage(boxSprite, box.x, box.y, box.width, box.height);
-    });
+    let sprite;
 
+    if (box.isSabotaged) {
+        sprite = assets.boxCorrupted;
+    } else {
+        sprite = assets.boxNormal;
+    }
+
+    ctx.drawImage(
+        sprite,
+        box.x,
+        box.y,
+        box.width,
+        box.height
+    );
+});
+    
     // Draw Mochkil
     ctx.drawImage(assets.mochkil, player.x, player.y, player.width, player.height);
     
