@@ -84,7 +84,7 @@
                 <button id="playMochkil">PLAY MOCHKIL</button>
                 <button id="playAzul" style="background:var(--quantum-blue);">PLAY AZUL</button>
             </div>
-            <p style="color:gray; font-size:10px; margin-top:20px;">v2.0 - Optimized for iPhone</p>
+            <p style="color:gray; font-size:10px; margin-top:20px;">v2.1 - Audio Fix</p>
         </div>
 
         <div id="creditsScreen" class="overlay" style="display:none;">
@@ -99,52 +99,35 @@
     <script src="game.js"></script>
 
     <script>
-        // Use a single, clean script block
         let isEnding = false;
 
-        // Use Event Listeners instead of onclick="" to avoid "initGame is not defined" errors
         document.getElementById('playMochkil').addEventListener('click', () => handleStart('MOCHKIL'));
         document.getElementById('playAzul').addEventListener('click', () => handleStart('AZUL'));
 
         function handleStart(choice) {
-            // Hide menu
             document.getElementById('startScreen').style.display = 'none';
-            
-            // Start Audio
+
+            // Prime the video for sound (iPhone handshake)
+            const video = document.getElementById('endVideo');
+            video.play().then(() => {
+                video.pause();
+                video.currentTime = 0;
+                video.muted = false; 
+            }).catch(() => {
+                console.log("Audio priming skipped");
+            });
+
             if (typeof bgMusic !== 'undefined') {
                 bgMusic.muted = isMuted;
                 if (!isMuted) bgMusic.play().catch(() => {});
             }
-            
-            // Start the actual game loop in game.js
+
             if (typeof startGame === "function") {
                 startGame(choice);
             }
             
-            // iPhone Haptic Feedback
             if (window.navigator.vibrate) window.navigator.vibrate(20);
         }
-
-        function handleStart(choice) {
-    document.getElementById('startScreen').style.display = 'none';
-
-    // NEW: "Prime" the video for sound later
-    const video = document.getElementById('endVideo');
-    video.play().then(() => {
-        video.pause();
-        video.currentTime = 0;
-        video.muted = false; // This "unlocks" the sound for later
-    }).catch(() => {});
-
-    if (typeof bgMusic !== 'undefined') {
-        bgMusic.muted = isMuted;
-        if (!isMuted) bgMusic.play().catch(() => {});
-    }
-
-    if (typeof startGame === "function") {
-        startGame(choice);
-    }
-
 
         function endGame(videoFile, msg) {
             if (isEnding) return;
@@ -199,7 +182,6 @@
             skipBtn.onclick = transitionToCredits;
         }
 
-        // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
