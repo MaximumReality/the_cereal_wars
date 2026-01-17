@@ -82,50 +82,55 @@
         }
 
         function endGame(videoFile, msg) {
-            if (isEnding) return;
-            isEnding = true;
-            
-            // 1. Stop Music and Game
-            if (typeof bgMusic !== 'undefined') bgMusic.pause();
-            
-            document.getElementById('winMessage').innerText = msg;
-            const video = document.getElementById('endVideo');
-            const credits = document.getElementById('creditsScreen');
-            const skipBtn = document.getElementById('skipVideo');
-            
-            // 2. Prepare Video
-            video.src = videoFile;
-            video.style.display = 'block';
-            video.muted = true; // Safari requirement to start
-            video.load();
-            
-            // 3. Play and Unmute
-            video.play().then(() => {
-                skipBtn.style.display = 'block';
-                // Small delay helps Safari stabilize the audio channel
-                setTimeout(() => {
-                    if (!isMuted) {
-                        video.muted = false;
-                        video.volume = 1.0;
-                    }
-                }, 300);
-            }).catch((error) => {
-                console.log("Video Playback Error:", error);
-                transitionToCredits();
-            });
+    if (isEnding) return;
+    isEnding = true;
+    
+    // 1. HARD STOP the background music
+    if (typeof bgMusic !== 'undefined') {
+        bgMusic.pause();
+        bgMusic.currentTime = 0; 
+        // We override the global muted state for a second so the video can play
+    }
+    
+    document.getElementById('winMessage').innerText = msg;
+    const video = document.getElementById('endVideo');
+    const credits = document.getElementById('creditsScreen');
+    const skipBtn = document.getElementById('skipVideo');
+    
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.muted = true; // MUST start muted for Safari
+    video.load();
+    
+    video.play().then(() => {
+        skipBtn.style.display = 'block';
+        // If the user had sound "ON" during the game, unmute the video
+        setTimeout(() => {
+            if (!isMuted) {
+                video.muted = false;
+                video.volume = 1.0;
+            }
+        }, 500); 
+    }).catch((error) => {
+        console.log("Video error", error);
+        transitionToCredits();
+    });
 
-            const transitionToCredits = () => {
-                video.pause();
-                video.src = ""; // Stop loading data
-                video.style.display = 'none';
-                skipBtn.style.display = 'none';
-                credits.style.display = 'flex';
-                if (!isMuted && typeof bgMusic !== 'undefined') bgMusic.play().catch(() => {});
-            };
-
-            video.onended = transitionToCredits;
-            skipBtn.onclick = transitionToCredits;
+    const transitionToCredits = () => {
+        video.pause();
+        video.src = "";
+        video.style.display = 'none';
+        skipBtn.style.display = 'none';
+        credits.style.display = 'flex';
+        // Only restart music if sound was ON
+        if (!isMuted && typeof bgMusic !== 'undefined') {
+            bgMusic.play().catch(() => {});
         }
+    };
+
+    video.onended = transitionToCredits;
+    skipBtn.onclick = transitionToCredits;
+}
 
         function triggerShake(duration) {
             const container = document.getElementById('game-container');
