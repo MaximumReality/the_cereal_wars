@@ -149,11 +149,20 @@ function draw() {
 
 function endGame(videoFile) {
     gameState = 'over';
+    if (bgMusic) bgMusic.pause();
+
     const video = document.getElementById('endVideo');
+    const credits = document.getElementById('creditsScreen');
+    
     video.src = videoFile;
     video.style.display = 'block';
     video.play();
-    video.onended = () => location.reload();
+    
+    video.onended = () => {
+        video.style.display = 'none';
+        // Show the credits instead of a direct reload
+        credits.style.display = 'flex'; 
+    };
 }
 
 // Mobile Touch Control
