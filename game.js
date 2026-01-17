@@ -129,7 +129,7 @@ function update() {
     if (marketShare >= 100 || mentalLevel >= 200) {
         endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
     } else if (marketShare <= 0) {
-        endGame('8bit_azulo.mp4', "AZUL WINS - QUANTUM ORDER RESTORED");
+        endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
     }
 }
 
