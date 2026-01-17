@@ -1,128 +1,156 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Game State & Stats
+// Set canvas resolution for iPhone 14 Pro Max
+canvas.width = 430;
+canvas.height = 932;
+
+// Game State & Variables
 let gameState = 'waiting';
-let marketShare = 50; // Start at 50/50
+let marketShare = 50; 
 let mentalLevel = 0;
 let boxes = [];
+let score = 0;
 
-// Image Assets
-const sprites = {
+// Asset Registry
+const assets = {
     mochkil: new Image(),
     beanie: new Image(),
     chefHat: new Image(),
-    azuloBox: new Image(),
-    corruptedBox: new Image(),
-    flyAzulo: new Image(),
-    holdingAzulo: new Image(),
-    badge: new Image()
+    badge: new Image(),
+    // Enemies
+    flyAzulo: new Image(),      // Blue eyes
+    holdingAzulo: new Image(),  // Azul patching
+    flailAzulo: new Image(),    // Green glow
+    // Boxes
+    boxNormal: new Image(),     // azulos_special
+    boxCorrupted: new Image(),  // azulos_corrupted
+    // Endings
+    thiefMochkil: new Image()   // Defeat sprite
 };
 
-// Map your filenames
-sprites.mochkil.src = 'thief_no_cereal.png';
-sprites.beanie.src = 'beanie.png';
-sprites.chefHat.src = 'chef-hat.png';
-sprites.azuloBox.src = 'azulos_special.png';
-sprites.corruptedBox.src = 'azulos_corrupted.png';
-sprites.flyAzulo.src = 'flyazulo.png';
-sprites.holdingAzulo.src = 'holding_azulos.png';
-sprites.badge.src = 'credibility_badge.png';
+// Mapping filenames provided
+assets.mochkil.src = 'thief_no_cereal.png';
+assets.beanie.src = 'beanie.png';
+assets.chefHat.src = 'chef-hat.png';
+assets.badge.src = 'credibility_badge.png';
+assets.flyAzulo.src = 'flyazulo.png';
+assets.holdingAzulo.src = 'holding_azulos.png';
+assets.flailAzulo.src = 'flail.png';
+assets.boxNormal.src = 'azulos_special.png';
+assets.boxCorrupted.src = 'azulos_corrupted.png';
+assets.thiefMochkil.src = 'thief_no_cereal.png';
 
-const player = { x: 150, y: 500, width: 80, height: 100, mode: 'NORMAL' };
-const azul = { x: 100, y: 50, width: 90, height: 90, state: 'FLYING' };
+const player = { x: 175, y: 750, width: 80, height: 100 };
+const azul = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING' };
 
-// --- Game Logic ---
-
-function spawnBox() {
-    if (gameState !== 'playing') return;
-    boxes.push({
-        x: Math.random() * (canvas.width - 60),
-        y: -50,
-        isSabotaged: false,
-        speed: 3 + (marketShare / 20)
-    });
+function startGame() {
+    gameState = 'playing';
+    marketShare = 50;
+    mentalLevel = 0;
+    boxes = [];
+    requestAnimationFrame(gameLoop);
 }
-setInterval(spawnBox, 1200);
+
+// Spawner: Drops Azulo's boxes from the top
+setInterval(() => {
+    if (gameState === 'playing') {
+        boxes.push({
+            x: Math.random() * (canvas.width - 60),
+            y: -80,
+            width: 60,
+            height: 80,
+            isSabotaged: false,
+            speed: 4 + Math.random() * 3
+        });
+    }
+}, 1000);
 
 function update() {
     if (gameState !== 'playing') return;
 
-    // Move Boxes
+    // 1. Update Boxes
     boxes.forEach((box, index) => {
         box.y += box.speed;
-        
-        // Collision: Mochkil Sabotages the Box
-        if (checkCollision(player, box) && !box.isSabotaged) {
-            box.isSabotaged = true;
-            marketShare += 5;
-            mentalLevel += 15;
-            triggerFlash('beanie'); // Quick beanie flash
+
+        // Collision detection: Mochkil hits a box
+        if (player.x < box.x + box.width && player.x + player.width > box.x &&
+            player.y < box.y + box.height && player.y + player.height > box.y) {
+            
+            if (!box.isSabotaged) {
+                box.isSabotaged = true;
+                marketShare += 2;
+                mentalLevel += 5;
+                if (typeof triggerShake === "function") triggerShake(200);
+            }
         }
-        
-        // Remove off-screen boxes
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
-    // Azul's "Patching" AI
-    if (Math.random() > 0.97) {
+    // 2. Azul's "Patching" AI
+    if (Math.random() > 0.98 && boxes.some(b => b.isSabotaged)) {
         azul.state = 'PATCHING';
-        const target = boxes.find(b => b.isSabotaged);
-        if (target) {
-            target.isSabotaged = false;
-            marketShare -= 10;
-        }
-        setTimeout(() => { azul.state = 'FLYING'; }, 600);
+        let target = boxes.find(b => b.isSabotaged);
+        setTimeout(() => {
+            if (target) {
+                target.isSabotaged = false;
+                marketShare -= 5;
+            }
+            azul.state = 'FLYING';
+        }, 500);
     }
 
-    checkEndGame();
+    // 3. Victory/Defeat Checks
+    if (marketShare >= 100) endGame('puffs_commercial.mp4');
+    if (marketShare <= 0) endGame('8bit_azulo.mp4');
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Azul
-    const azulImg = azul.state === 'PATCHING' ? sprites.holdingAzulo : sprites.flyAzulo;
-    ctx.drawImage(azulImg, azul.x, azul.y, azul.width, azul.height);
-
-    // Draw Mochkil & Headwear
-    ctx.drawImage(sprites.mochkil, player.x, player.y, player.width, player.height);
-    if (mentalLevel > 70) {
-        ctx.drawImage(sprites.beanie, player.x + 10, player.y - 20, 60, 40);
-    } else {
-        ctx.drawImage(sprites.chefHat, player.x + 10, player.y - 25, 60, 50);
-    }
+    // Draw Azul (Flying vs Patching)
+    let azulSprite = azul.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
+    ctx.drawImage(azulSprite, azul.x, azul.y, azul.width, azul.height);
 
     // Draw Boxes
     boxes.forEach(box => {
-        const img = box.isSabotaged ? sprites.corruptedBox : sprites.azuloBox;
-        ctx.drawImage(img, box.x, box.y, 60, 80);
+        let boxSprite = box.isSabotaged ? assets.boxCorrupted : assets.boxNormal;
+        ctx.drawImage(boxSprite, box.x, box.y, box.width, box.height);
     });
 
-    // UI Updates
-    document.getElementById('score').innerText = marketShare;
-    document.getElementById('rage').innerText = Math.min(mentalLevel, 100);
+    // Draw Mochkil
+    ctx.drawImage(assets.mochkil, player.x, player.y, player.width, player.height);
+    
+    // Hat Logic: Beanie if Mental, Chef Hat if cooling down
+    let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
+    ctx.drawImage(hat, player.x + 10, player.y - 30, 60, 50);
+
+    // Update UI
+    document.getElementById('score').innerText = Math.floor(marketShare);
+    document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
 
-// Utility functions
-function checkCollision(a, b) {
-    return a.x < b.x + 60 && a.x + a.width > b.x && a.y < b.y + 80 && a.y + a.height > b.y;
+function endGame(videoFile) {
+    gameState = 'over';
+    const video = document.getElementById('endVideo');
+    video.src = videoFile;
+    video.style.display = 'block';
+    video.play();
+    video.onended = () => location.reload();
 }
 
-function checkEndGame() {
-    if (marketShare >= 100) playCommercial('puffs_commercial.mp4');
-    if (marketShare <= 0) playCommercial('8bit_azulo.mp4');
-}
-
-// iPhone Touch Movement
+// Mobile Touch Control
 canvas.addEventListener('touchmove', (e) => {
-    const touch = e.touches[0];
-    player.x = touch.clientX - (player.width / 2);
+    e.preventDefault();
+    let touch = e.touches[0];
+    let rect = canvas.getBoundingClientRect();
+    player.x = (touch.clientX - rect.left) - (player.width / 2);
 }, { passive: false });
 
 function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
+    if (gameState === 'playing') {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
 }
-gameLoop();
