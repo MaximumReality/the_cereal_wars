@@ -1,116 +1,98 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+canvas.width = 430; canvas.height = 932;
 
-// Optimized for iPhone 14 Pro Max display
-canvas.width = 430;
-canvas.height = 932;
-
-// --- Game State ---
 let gameState = 'waiting';
 let playerChar = 'MOCHKIL'; 
 let marketShare = 50; 
 let mentalLevel = 0;
 let boxes = [];
-let thrownPuffs = [];
+let thrownBoxes = []; 
 let isMuted = true;
 let lastThrowTime = 0;
 
-// --- Audio ---
 let bgMusic = new Audio('cereal_wars.mp3'); 
 bgMusic.loop = true;
 
-// Mute Toggle Logic
-document.getElementById('muteToggle').addEventListener('click', (e) => {
-    e.stopPropagation(); 
-    isMuted = !isMuted;
-    document.getElementById('soundStatus').innerText = isMuted ? "OFF" : "ON";
-    bgMusic.muted = isMuted;
-    if (!isMuted) bgMusic.play().catch(() => {});
-});
-
-// --- Asset Registry ---
+// Assets
 const assets = {
-    mochkil: new Image(), beanie: new Image(), chefHat: new Image(),
-    flyAzulo: new Image(), holdingAzulo: new Image(),
-    boxNormal: new Image(), boxCorrupted: new Image(), puffsCereal: new Image()
+    mochkilPlayer: new Image(), 
+    mochkilNPC: new Image(), // The one holding the box
+    flyAzulo: new Image(), 
+    holdingAzulo: new Image(),
+    boxNormal: new Image(), 
+    boxCorrupted: new Image(),
+    beanie: new Image(), 
+    chefHat: new Image()
 };
 
-assets.mochkil.src = 'thief_no_cereal.png';
-assets.beanie.src = 'beanie.png';
-assets.chefHat.src = 'chef-hat.png';
+assets.mochkilPlayer.src = 'thief_no_cereal.png';
+assets.mochkilNPC.src = 'mochkil_puffs.PNG'; // NPC Sprite
 assets.flyAzulo.src = 'flyazulo.png';
 assets.holdingAzulo.src = 'holding_azulos.png';
 assets.boxNormal.src = 'azulos_special.png';
 assets.boxCorrupted.src = 'azulos_corrupted.png';
-assets.puffsCereal.src = 'puffs_cereal.png';
+assets.beanie.src = 'beanie.png';
+assets.chefHat.src = 'chef-hat.png';
 
-// --- Entities ---
-const player = { x: 175, y: 750, width: 80, height: 100, state: 'FLYING' }; // User
-const enemy = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 }; // AI
+const player = { x: 175, y: 750, width: 80, height: 100, state: 'FLYING' };
+const enemy = { x: 150, y: 100, width: 100, height: 100, state: 'FLYING', dir: 1 };
 
-// --- Core Functions ---
 function startGame(choice) {
     playerChar = choice;
     gameState = 'playing';
-    marketShare = 50; 
-    mentalLevel = 0;
-    boxes = []; 
-    thrownPuffs = [];
+    marketShare = 50; mentalLevel = 0;
+    boxes = []; thrownBoxes = [];
 
-    // Swap positions based on character
     if (playerChar === 'AZUL') {
-        player.y = 100; // Human Azul at top
-        enemy.y = 750;  // AI Mochkil at bottom
+        player.y = 100; enemy.y = 750;
     } else {
-        player.y = 750; // Human Mochkil at bottom
-        enemy.y = 100;  // AI Azul at top
+        player.y = 750; enemy.y = 100;
     }
     requestAnimationFrame(gameLoop);
 }
 
 function update() {
-    // Only update if we are actively playing
     if (gameState !== 'playing') return;
 
-    // 1. AI Movement Logic
     enemy.x += 3 * enemy.dir;
     if (enemy.x > canvas.width - enemy.width || enemy.x < 0) enemy.dir *= -1;
 
-    // 2. AI Attacks (Mochkil AI fires at Azul Player)
-    if (playerChar === 'AZUL' && Math.random() > 0.98) {
-        thrownPuffs.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 12, active: true });
+    // NPC MOCHKIL: Throws his branded boxes at Azul
+    if (playerChar === 'AZUL' && Math.random() > 0.97) {
+        thrownBoxes.push({ x: enemy.x + 20, y: enemy.y, width: 60, height: 80, speed: 10, active: true });
     }
 
-    // 3. Projectile Physics
-    thrownPuffs.forEach((puff, pIndex) => {
-        puff.y -= puff.speed; 
+    // Brand War Projectile Logic
+    thrownBoxes.forEach((box, bIndex) => {
+        box.y -= box.speed; // Flying upward toward Azul
         
         let target = (playerChar === 'AZUL') ? player : enemy;
-        if (puff.x < target.x + target.width && puff.x + puff.width > target.x &&
-            puff.y < target.y + target.height && puff.y + puff.height > target.y && puff.active) {
-            
-            puff.active = false;
+        if (box.x < target.x + target.width && box.x + box.width > target.x &&
+            box.y < target.y + target.height && box.y + box.height > target.y && box.active) {
+            box.active = false;
             marketShare += 5; 
-            mentalLevel += 2;
-            thrownPuffs.splice(pIndex, 1);
+            mentalLevel += 3;
+            thrownBoxes.splice(bIndex, 1);
         }
-        if (puff.y < -100) thrownPuffs.splice(pIndex, 1);
+        if (box.y < -100) thrownBoxes.splice(bIndex, 1);
     });
 
-    // 4. Box Spawning and Interaction
+    // Sabotage/Restore Logic
     boxes.forEach((box, index) => {
         box.y += box.speed;
         
+        // Mochkil intercepts to Sabotage
         if (playerChar === 'MOCHKIL' && !box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
                 box.isSabotaged = true;
-                marketShare += 2; 
-                mentalLevel += 5;
+                marketShare += 2; mentalLevel += 5;
                 if (typeof triggerShake === "function") triggerShake(200);
             }
         }
 
+        // Azul intercepts to Fix
         if (playerChar === 'AZUL' && box.isSabotaged) {
             if (player.x < box.x + box.width && player.x + player.width > box.x &&
                 player.y < box.y + box.height && player.y + player.height > box.y) {
@@ -123,133 +105,44 @@ function update() {
         if (box.y > canvas.height) boxes.splice(index, 1);
     });
 
-    // 5. Win/Loss Logic (ONLY TRIGGERS ONCE)
+    // Win Logic
     marketShare = Math.max(0, Math.min(100, marketShare));
-    
     if (marketShare >= 100 || mentalLevel >= 200) {
-        gameState = 'over'; // Change state IMMEDIATELY to stop the loop
-        endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
+        gameState = 'over';
+        endGame('puffs_commercial.MP4', "MOCHKIL WINS");
     } else if (marketShare <= 0) {
-        gameState = 'over'; // Change state IMMEDIATELY to stop the loop
-        endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
+        gameState = 'over';
+        endGame('8bit_azulo.MP4', "AZUL WINS");
     }
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Azul (Check if Player or AI)
+    // 1. Draw Azul (Human or AI)
     let azulObj = (playerChar === 'AZUL') ? player : enemy;
     let azulSprite = azulObj.state === 'PATCHING' ? assets.holdingAzulo : assets.flyAzulo;
     ctx.drawImage(azulSprite, azulObj.x, azulObj.y, azulObj.width, azulObj.height);
 
-    // Draw Mochkil (Check if Player or AI)
+    // 2. Draw Mochkil (Human or NPC)
     let mochObj = (playerChar === 'MOCHKIL') ? player : enemy;
-    ctx.drawImage(assets.mochkil, mochObj.x, mochObj.y, mochObj.width, mochObj.height);
+    let mochSprite = (playerChar === 'AZUL') ? assets.mochkilNPC : assets.mochkilPlayer;
+    ctx.drawImage(mochSprite, mochObj.x, mochObj.y, mochObj.width, mochObj.height);
     
-    // Draw Mochkil's Hat based on Mental Level
+    // Hat accessories
     let hat = mentalLevel > 50 ? assets.beanie : assets.chefHat;
     ctx.drawImage(hat, mochObj.x + 10, mochObj.y - 30, 60, 50);
 
-    // Draw Thrown Puffs
-    thrownPuffs.forEach(p => ctx.drawImage(assets.puffsCereal, p.x, p.y, p.width, p.height));
-    
-    // Draw Falling Boxes
-    boxes.forEach(b => ctx.drawImage(b.isSabotaged ? assets.boxCorrupted : assets.boxNormal, b.x, b.y, b.width, b.height));
+    // 3. Draw Thrown Brand Boxes (The Projectiles)
+    thrownBoxes.forEach(box => {
+        ctx.drawImage(assets.mochkilNPC, box.x, box.y, box.width, box.height);
+    });
 
-    // Update UI Stats
+    // 4. Draw Falling Neutral/Sabotaged Boxes
+    boxes.forEach(b => {
+        ctx.drawImage(b.isSabotaged ? assets.boxCorrupted : assets.boxNormal, b.x, b.y, b.width, b.height);
+    });
+
     document.getElementById('score').innerText = Math.floor(marketShare);
     document.getElementById('rage').innerText = Math.floor(mentalLevel);
 }
-
-// --- End Game & Video Logic ---
-function endGame(videoFile, msg) {
-    gameState = 'over';
-    
-    const video = document.getElementById('endVideo');
-    const credits = document.getElementById('creditsScreen');
-    const skipBtn = document.getElementById('skipVideo');
-    const winMsg = document.getElementById('winMessage');
-
-    if (winMsg) winMsg.innerText = msg;
-    
-    // Stop background music
-    bgMusic.pause();
-
-    // Setup Video for iOS Handshake
-    video.src = videoFile;
-    video.style.display = 'block';
-    video.muted = true; 
-    video.setAttribute('playsinline', ''); 
-    video.load();
-    
-    video.play().then(() => {
-        if (skipBtn) skipBtn.style.display = 'block';
-        
-        // The Audio Fix: Unmute after playback has definitively started
-        setTimeout(() => {
-            if (!isMuted) {
-                video.muted = false;
-                video.volume = 1.0;
-            }
-        }, 150); 
-    }).catch((error) => {
-        console.log("Video Playback Error:", error);
-        transitionToCredits();
-    });
-
-    const transitionToCredits = () => {
-        video.pause();
-        video.style.display = 'none';
-        if (skipBtn) skipBtn.style.display = 'none';
-        credits.style.display = 'flex';
-        // Resume looping music for credits
-        if (!isMuted) bgMusic.play().catch(() => {});
-    };
-
-    video.onended = transitionToCredits;
-    if (skipBtn) skipBtn.onclick = transitionToCredits;
-}
-
-// --- Input Controls ---
-canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    let touch = e.touches[0];
-    let rect = canvas.getBoundingClientRect();
-    player.x = Math.max(0, Math.min(canvas.width - player.width, (touch.clientX - rect.left) - (player.width / 2)));
-}, { passive: false });
-
-canvas.addEventListener('touchstart', (e) => {
-    if (gameState === 'playing' && playerChar === 'MOCHKIL') {
-        const now = Date.now();
-        if (now - lastThrowTime > 300) {
-            thrownPuffs.push({ x: player.x + 10, y: player.y, width: 60, height: 80, speed: 12, active: true });
-            lastThrowTime = now;
-            if (window.navigator.vibrate) window.navigator.vibrate(15);
-        }
-    }
-}, { passive: false });
-
-// --- Loops ---
-function gameLoop() { 
-    if (gameState === 'playing') { 
-        update(); 
-        draw(); 
-        requestAnimationFrame(gameLoop); 
-    } 
-}
-
-setInterval(() => {
-    if (gameState === 'playing') {
-        // Azul needs corrupted boxes to appear so he can fix them
-        let sabotaged = (playerChar === 'AZUL') ? (Math.random() > 0.4) : false;
-        boxes.push({ 
-            x: Math.random() * (canvas.width - 60), 
-            y: -80, 
-            width: 60, 
-            height: 80, 
-            isSabotaged: sabotaged, 
-            speed: 4 + Math.random() * 3 
-        });
-    }
-}, 1000);
