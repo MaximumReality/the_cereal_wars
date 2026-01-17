@@ -129,7 +129,7 @@ function update() {
         if (typeof endGame === 'function') endGame('puffs_commercial.MP4', "MOCHKIL WINS - REALITY CONVERTED");
     } else if (marketShare <= 0) {
         gameState = 'over';
-        if (typeof endGame === 'function') endGame('8bit_azulo.MP4', "AZUL WINS - QUANTUM ORDER RESTORED");
+        if (typeof endGame === 'function') endGame('8bit_azulo.mp4', "AZUL WINS - QUANTUM ORDER RESTORED");
     }
 }
 
