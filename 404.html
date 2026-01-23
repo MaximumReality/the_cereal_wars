@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 – MAXIMUM REALITY</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+    body { 
+        background-color: #000; 
+        margin: 0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        font-family: 'Press Start 2P', cursive; 
+        overflow: hidden; 
+        flex-direction: column; 
+        color: #ff00ff; 
+    }
+
+    .arcade-container { 
+        position: relative; 
+        width: 95vw; 
+        max-width: 800px; 
+        text-align: center; 
+    }
+
+    .cabinet-shell { 
+        width: 100%; 
+        display: block; 
+        position: relative; 
+        z-index: 50; 
+        pointer-events: none; 
+    }
+
+    .azul-character { 
+        position: absolute; 
+        top: -79px; 
+        left: 50%; 
+        transform: translateX(-50%); 
+        width: 120px; 
+        z-index: 40; 
+        pointer-events: none; 
+        animation: azulFloat 3s ease-in-out infinite; 
+    }
+
+    .error-message { 
+        position: absolute; 
+        top: 36%; 
+        width: 50%;  
+        left: 50%; 
+        transform: translateX(-50%); 
+        font-size: 0.5rem; 
+        text-shadow: none; 
+        z-index: 100; 
+        line-height: 1.4; 
+    }
+
+    .error-message h1 { 
+        font-size: 1.2rem; 
+        margin-bottom: 10px; 
+        text-shadow: none; 
+    }
+
+    .error-message a { 
+        color: #39ff14; 
+        text-decoration: none; 
+        font-size: 0.8rem; 
+        display: inline-block; 
+        margin-top: 135px; 
+        padding: 6px 10px; 
+        background: #000; 
+        border: 2px solid #39ff14; 
+        border-radius: 4px; 
+        box-shadow: 0 0 10px #39ff14; 
+        transition: all 0.2s ease; 
+    }
+
+    .error-message a:hover { 
+        background: #39ff14; 
+        color: #000; 
+        transform: scale(1.05); 
+        box-shadow: 0 0 20px #39ff14; 
+    }
+
+    @keyframes azulFloat { 
+        0%, 100% { transform: translateX(-50%) translateY(0); } 
+        50% { transform: translateX(-50%) translateY(-10px); } 
+    }
+</style>
+</head>
+<body>
+<div class="arcade-container">
+    <img src="https://maximumreality.github.io/maximum-reality-arcade/arcade.PNG" class="cabinet-shell">
+    <img src="https://maximumreality.github.io/maximum-reality-arcade/azul_sitting.png" class="azul-character">
+    <div class="error-message">
+        <h1>GAME OVER</h1>
+        <p>Looks like you wandered into a glitchy reality...</p>
+        <a href="https://maximumreality.github.io/maximum-reality-arcade/">RETURN TO ARCADE</a>
+    </div>
+</div>
+</body>
+</html>
