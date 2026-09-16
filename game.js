@@ -212,6 +212,22 @@ canvas.addEventListener('touchstart', (e) => {
     }
 }, { passive: false });
 
+// Mouse controls (desktop)
+canvas.addEventListener('mousemove', (e) => {
+    let rect = canvas.getBoundingClientRect();
+    player.x = Math.max(0, Math.min(canvas.width - player.width, (e.clientX - rect.left) - (player.width / 2)));
+});
+
+canvas.addEventListener('mousedown', (e) => {
+    if (gameState === 'playing' && playerChar === 'MOCHKIL') {
+        const now = Date.now();
+        if (now - lastThrowTime > 300) {
+            thrownPuffs.push({ x: player.x + 10, y: player.y, width: 60, height: 80, speed: 12, active: true });
+            lastThrowTime = now;
+        }
+    }
+});
+
 // Box Spawning
 setInterval(() => {
     if (gameState === 'playing') {
